@@ -1,0 +1,555 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+        Control styles.
+
+        Buttons are rebuilt from a bare ContentPresenter rather than restyled, because
+        the stock WinUI template carries its own border, shadow and pointer-over brushes
+        that fight the flat, hairline-separated look this product uses. Every template
+        below resolves colour through ThemeResource, so all of them follow the theme flip
+        the shell performs on its root.
+    -->
+
+    <!-- ===================== Base: flat, no chrome ===================== -->
+    <Style x:Key="FlatButtonStyle" TargetType="Button">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeSmall}" />
+        <Setter Property="Foreground" Value="{ThemeResource InkBrush}" />
+        <Setter Property="CornerRadius" Value="{StaticResource RadiusSmall}" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="UseSystemFocusVisuals" Value="True" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Grid
+                        x:Name="Root"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="{TemplateBinding CornerRadius}">
+
+                        <Grid
+                            x:Name="Overlay"
+                            Background="{ThemeResource HoverBrush}"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            Opacity="0" />
+
+                        <ContentPresenter
+                            x:Name="Presenter"
+                            Padding="{TemplateBinding Padding}"
+                            HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                            VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                            Content="{TemplateBinding Content}"
+                            ContentTemplate="{TemplateBinding ContentTemplate}"
+                            Foreground="{TemplateBinding Foreground}" />
+
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal" />
+                                <VisualState x:Name="PointerOver">
+                                    <Storyboard>
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="Overlay"
+                                            Storyboard.TargetProperty="Opacity"
+                                            To="1"
+                                            Duration="0:0:0.10" />
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="Pressed">
+                                    <Storyboard>
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="Overlay"
+                                            Storyboard.TargetProperty="Opacity"
+                                            To="1"
+                                            Duration="0" />
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="Presenter"
+                                            Storyboard.TargetProperty="Opacity"
+                                            To="0.7"
+                                            Duration="0" />
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="Disabled">
+                                    <Storyboard>
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="Presenter"
+                                            Storyboard.TargetProperty="Opacity"
+                                            To="0.4"
+                                            Duration="0" />
+                                    </Storyboard>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- A square tap target holding one glyph. -->
+    <Style
+        x:Key="IconButtonStyle"
+        BasedOn="{StaticResource FlatButtonStyle}"
+        TargetType="Button">
+        <Setter Property="Width" Value="32" />
+        <Setter Property="Height" Value="32" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+    </Style>
+
+    <!-- A history row: full width, title left, age right. -->
+    <Style
+        x:Key="RowButtonStyle"
+        BasedOn="{StaticResource FlatButtonStyle}"
+        TargetType="Button">
+        <Setter Property="Height" Value="{StaticResource RowHeightCompact}" />
+        <Setter Property="Padding" Value="10,0" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+    </Style>
+
+    <!-- ========================== Transcript =========================== -->
+    <!--
+        The transcript is built in code, so these carry every colour it needs. Styles
+        rather than brushes resolved in C#: a {ThemeResource} inside a setter is resolved
+        against the element the style is applied to, so a bubble created while the shell
+        is light still repaints when the shell flips to dark. Reading a brush from
+        Application.Current.Resources cannot do that — theme dictionaries there answer to
+        the application theme, which this product never changes.
+    -->
+    <Style x:Key="UserBubbleStyle" TargetType="Border">
+        <Setter Property="Padding" Value="14,10" />
+        <Setter Property="MaxWidth" Value="560" />
+        <Setter Property="Background" Value="{ThemeResource AccentSoftBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="20" />
+        <Setter Property="HorizontalAlignment" Value="Right" />
+    </Style>
+
+    <Style x:Key="AssistantMessageContainerStyle" TargetType="StackPanel">
+        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="MaxWidth" Value="860" />
+        <Setter Property="Margin" Value="0" />
+    </Style>
+
+    <Style x:Key="MessageListItemStyle" TargetType="ListViewItem">
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Margin" Value="0,0,0,12" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="VerticalContentAlignment" Value="Top" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListViewItem">
+                    <ContentPresenter />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="SidebarSectionHeaderStyle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeCaption}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{ThemeResource InkSecondaryBrush}" />
+    </Style>
+
+    <Style x:Key="NavButtonStyle" TargetType="Button" BasedOn="{StaticResource FlatButtonStyle}">
+        <Setter Property="Height" Value="46" />
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+        <Setter Property="Padding" Value="12,8" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="BorderBrush" Value="{ThemeResource HairlineBrush}" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="CornerRadius" Value="12" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Grid Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}">
+                        <Border x:Name="SelectedIndicator" Background="{ThemeResource SelectedBrush}" CornerRadius="{TemplateBinding CornerRadius}" Opacity="0" />
+                        <Grid x:Name="Overlay" Background="{ThemeResource HoverBrush}" Opacity="0" CornerRadius="{TemplateBinding CornerRadius}" />
+                        <ContentPresenter
+                            x:Name="Presenter"
+                            Padding="{TemplateBinding Padding}"
+                            HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                            VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                            Content="{TemplateBinding Content}"
+                            ContentTemplate="{TemplateBinding ContentTemplate}"
+                            Foreground="{TemplateBinding Foreground}" />
+                    </Grid>
+                    <VisualStateManager.VisualStateGroups>
+                        <VisualStateGroup x:Name="CommonStates">
+                            <VisualState x:Name="Normal" />
+                            <VisualState x:Name="PointerOver">
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="Overlay" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.16" />
+                                </Storyboard>
+                            </VisualState>
+                            <VisualState x:Name="Pressed">
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="Overlay" Storyboard.TargetProperty="Opacity" To="1" Duration="0" />
+                                    <DoubleAnimation Storyboard.TargetName="Presenter" Storyboard.TargetProperty="Opacity" To="0.86" Duration="0" />
+                                </Storyboard>
+                            </VisualState>
+                            <VisualState x:Name="Disabled">
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="Presenter" Storyboard.TargetProperty="Opacity" To="0.4" Duration="0" />
+                                </Storyboard>
+                            </VisualState>
+                        </VisualStateGroup>
+                    </VisualStateManager.VisualStateGroups>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="UserBubbleTextStyle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeBody}" />
+        <Setter Property="Foreground" Value="{ThemeResource InkBrush}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="IsTextSelectionEnabled" Value="True" />
+    </Style>
+
+    <!--
+        The reply is the content of the screen, so it gets no container. Boxing it would
+        make the answer look like an aside; leaving only the user's turns boxed is also
+        what makes the two sides scannable without reading either.
+    -->
+    <Style x:Key="AssistantTextStyle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeBody}" />
+        <Setter Property="LineHeight" Value="23" />
+        <Setter Property="Foreground" Value="{ThemeResource InkBrush}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="IsTextSelectionEnabled" Value="True" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+    </Style>
+
+    <!-- ========================== Markdown ============================= -->
+    <!--
+        Every block a reply can contain. Sizes are literal rather than tokenised for
+        heading levels — six discrete sizes read better hand-picked than derived from a
+        formula, and nothing else in the product needs an H4 or an H5.
+    -->
+    <Style x:Key="MarkdownParagraphStyle" TargetType="RichTextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeBody}" />
+        <Setter Property="LineHeight" Value="23" />
+        <Setter Property="Foreground" Value="{ThemeResource InkBrush}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="IsTextSelectionEnabled" Value="True" />
+    </Style>
+
+    <Style x:Key="MarkdownHeadingStyle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource DisplayFontFamily}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{ThemeResource InkBrush}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="IsTextSelectionEnabled" Value="True" />
+    </Style>
+
+    <Style x:Key="MarkdownQuoteBorderStyle" TargetType="Border">
+        <Setter Property="Padding" Value="14,2,0,2" />
+        <Setter Property="BorderBrush" Value="{ThemeResource HairlineStrongBrush}" />
+        <Setter Property="BorderThickness" Value="3,0,0,0" />
+    </Style>
+
+    <Style x:Key="MarkdownRuleStyle" TargetType="Border">
+        <Setter Property="Height" Value="1" />
+        <Setter Property="Background" Value="{ThemeResource HairlineStrongBrush}" />
+    </Style>
+
+    <Style x:Key="MarkdownBulletStyle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeBody}" />
+        <Setter Property="Foreground" Value="{ThemeResource InkTertiaryBrush}" />
+    </Style>
+
+    <!-- The fenced-code frame: language chip, copy button, and the code itself. -->
+    <Style x:Key="MarkdownCodeFrameStyle" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource SunkenBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource HairlineBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{StaticResource RadiusCard}" />
+    </Style>
+
+    <Style x:Key="MarkdownCodeHeaderTextStyle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource MonoFontFamily}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeMicro}" />
+        <Setter Property="Foreground" Value="{ThemeResource InkTertiaryBrush}" />
+    </Style>
+
+    <Style x:Key="MarkdownCodeTextStyle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource MonoFontFamily}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeSmall}" />
+        <Setter Property="Foreground" Value="{ThemeResource InkBrush}" />
+        <Setter Property="IsTextSelectionEnabled" Value="True" />
+        <Setter Property="FlowDirection" Value="LeftToRight" />
+    </Style>
+
+    <!-- A table cell's background is set per-cell (header vs body), the rest is shared. -->
+    <Style x:Key="MarkdownTableFrameStyle" TargetType="Border">
+        <Setter Property="BorderBrush" Value="{ThemeResource HairlineBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{StaticResource RadiusCard}" />
+    </Style>
+
+    <Style x:Key="MarkdownTableHeaderCellStyle" TargetType="Border">
+        <Setter Property="Padding" Value="10,7" />
+        <Setter Property="Background" Value="{ThemeResource SunkenBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource HairlineBrush}" />
+    </Style>
+
+    <Style x:Key="MarkdownTableCellStyle" TargetType="Border">
+        <Setter Property="Padding" Value="10,7" />
+        <Setter Property="BorderBrush" Value="{ThemeResource HairlineBrush}" />
+    </Style>
+
+    <Style x:Key="MarkdownTableHeaderTextStyle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeCaption}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{ThemeResource InkBrush}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+
+    <Style x:Key="MarkdownTableCellTextStyle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeCaption}" />
+        <Setter Property="Foreground" Value="{ThemeResource InkSecondaryBrush}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="IsTextSelectionEnabled" Value="True" />
+    </Style>
+
+    <!-- An inline code span, mid-paragraph: a small pill, forced LTR so a file name or
+         command never reverses inside a right-to-left sentence. -->
+    <Style x:Key="MarkdownInlineCodeStyle" TargetType="Border">
+        <Setter Property="Padding" Value="4,1" />
+        <Setter Property="Background" Value="{ThemeResource SunkenBrush}" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="FlowDirection" Value="LeftToRight" />
+    </Style>
+
+    <Style x:Key="MarkdownInlineCodeTextStyle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource MonoFontFamily}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeSmall}" />
+        <Setter Property="Foreground" Value="{ThemeResource InkBrush}" />
+    </Style>
+
+    <!-- Run status dot, one style per state. -->
+    <Style x:Key="RunDotStyle" TargetType="Ellipse">
+        <Setter Property="Width" Value="7" />
+        <Setter Property="Height" Value="7" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Fill" Value="{ThemeResource InkTertiaryBrush}" />
+    </Style>
+
+    <Style
+        x:Key="RunDotActiveStyle"
+        BasedOn="{StaticResource RunDotStyle}"
+        TargetType="Ellipse">
+        <Setter Property="Fill" Value="{ThemeResource AccentBrush}" />
+    </Style>
+
+    <Style
+        x:Key="RunDotFailedStyle"
+        BasedOn="{StaticResource RunDotStyle}"
+        TargetType="Ellipse">
+        <Setter Property="Fill" Value="{ThemeResource InkBrush}" />
+    </Style>
+
+    <!-- ============================ Icons ============================= -->
+    <!--
+        Every glyph in the product is a stroked 24-unit path. One style carries the
+        stroke weight, the caps and the ink, so an icon's markup is a single Data string
+        and the whole set stays visually consistent by construction.
+    -->
+    <Style x:Key="IconStyle" TargetType="Path">
+        <Setter Property="Width" Value="16" />
+        <Setter Property="Height" Value="16" />
+        <Setter Property="Stretch" Value="Uniform" />
+        <Setter Property="Stroke" Value="{ThemeResource InkSecondaryBrush}" />
+        <Setter Property="StrokeThickness" Value="1.6" />
+        <Setter Property="StrokeLineJoin" Value="Round" />
+        <Setter Property="StrokeStartLineCap" Value="Round" />
+        <Setter Property="StrokeEndLineCap" Value="Round" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+    </Style>
+
+    <Style
+        x:Key="IconSmallStyle"
+        BasedOn="{StaticResource IconStyle}"
+        TargetType="Path">
+        <Setter Property="Width" Value="13" />
+        <Setter Property="Height" Value="13" />
+        <Setter Property="Stroke" Value="{ThemeResource InkTertiaryBrush}" />
+        <Setter Property="StrokeThickness" Value="1.7" />
+    </Style>
+
+    <Style
+        x:Key="IconOnAccentStyle"
+        BasedOn="{StaticResource IconStyle}"
+        TargetType="Path">
+        <Setter Property="Stroke" Value="{ThemeResource InkOnAccentBrush}" />
+        <Setter Property="StrokeThickness" Value="2" />
+    </Style>
+
+    <!-- ======================= Segmented control ======================= -->
+    <!--
+        Selection is swapped as a whole style rather than as individual brushes.
+        A {ThemeResource} inside a setter is resolved against the *target element's*
+        theme when the style is applied, so this survives the shell's theme flip —
+        which a brush looked up from C# would not, because that resolves against the
+        application theme and the flip happens on the shell root.
+    -->
+    <Style
+        x:Key="TabStyle"
+        BasedOn="{StaticResource FlatButtonStyle}"
+        TargetType="Button">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="{StaticResource RadiusPill}" />
+    </Style>
+
+    <Style
+        x:Key="TabSelectedStyle"
+        BasedOn="{StaticResource FlatButtonStyle}"
+        TargetType="Button">
+        <Setter Property="Background" Value="{ThemeResource SelectedBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource HairlineBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{StaticResource RadiusPill}" />
+    </Style>
+
+    <Style x:Key="TabLabelStyle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeCaption}" />
+        <Setter Property="Foreground" Value="{ThemeResource InkTertiaryBrush}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <!-- The dock's own tab icons: unselected reads quiet, selected reads as ink. -->
+    <Style
+        x:Key="TabIconStyle"
+        BasedOn="{StaticResource IconSmallStyle}"
+        TargetType="Path">
+        <Setter Property="Stroke" Value="{ThemeResource InkTertiaryBrush}" />
+    </Style>
+
+    <Style
+        x:Key="TabIconSelectedStyle"
+        BasedOn="{StaticResource IconSmallStyle}"
+        TargetType="Path">
+        <Setter Property="Stroke" Value="{ThemeResource InkBrush}" />
+    </Style>
+
+    <Style x:Key="TabLabelSelectedStyle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeCaption}" />
+        <Setter Property="Foreground" Value="{ThemeResource InkBrush}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <!-- ============================ Chips ============================= -->
+    <Style x:Key="ChipTextStyle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeCaption}" />
+        <Setter Property="Foreground" Value="{ThemeResource InkSecondaryBrush}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <!--
+        Amber, only at full access. The colour is the whole point: this chip is the one
+        place the product says out loud that nothing will stop the agent, and it has to
+        be legible at a glance from across the composer.
+    -->
+    <Style x:Key="WarnTextStyle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeCaption}" />
+        <Setter Property="Foreground" Value="{ThemeResource WarnBrush}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style
+        x:Key="IconWarnStyle"
+        BasedOn="{StaticResource IconSmallStyle}"
+        TargetType="Path">
+        <Setter Property="Stroke" Value="{ThemeResource WarnBrush}" />
+    </Style>
+
+    <!-- ========================== Typography =========================== -->
+    <Style x:Key="RowTextStyle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeSmall}" />
+        <Setter Property="Foreground" Value="{ThemeResource InkBrush}" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="SectionCaptionTextStyle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeMicro}" />
+        <Setter Property="Foreground" Value="{ThemeResource InkTertiaryBrush}" />
+    </Style>
+
+    <!-- A small dialog's title: the one place a flyout needs more weight than a caption. -->
+    <Style x:Key="FlyoutTitleTextStyle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeSmall}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{ThemeResource InkBrush}" />
+    </Style>
+
+    <!-- ============================ Inputs ============================= -->
+    <!--
+        Borderless text entry. The surrounding surface already draws the field, so the
+        stock underline and focus border would be a second box inside the first.
+    -->
+    <Style x:Key="BareTextBoxStyle" TargetType="TextBox">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeBody}" />
+        <Setter Property="Foreground" Value="{ThemeResource InkBrush}" />
+        <Setter Property="SelectionHighlightColor" Value="{ThemeResource AccentBrush}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TextBox">
+                    <Grid Background="Transparent">
+                        <TextBlock
+                            x:Name="PlaceholderTextContentPresenter"
+                            Margin="{TemplateBinding Padding}"
+                            FontFamily="{TemplateBinding FontFamily}"
+                            FontSize="{TemplateBinding FontSize}"
+                            Foreground="{ThemeResource InkTertiaryBrush}"
+                            IsHitTestVisible="False"
+                            Text="{TemplateBinding PlaceholderText}"
+                            TextWrapping="{TemplateBinding TextWrapping}" />
+                        <ScrollViewer
+                            x:Name="ContentElement"
+                            Margin="{TemplateBinding Padding}"
+                            AutomationProperties.AccessibilityView="Raw"
+                            HorizontalScrollBarVisibility="{TemplateBinding ScrollViewer.HorizontalScrollBarVisibility}"
+                            HorizontalScrollMode="{TemplateBinding ScrollViewer.HorizontalScrollMode}"
+                            IsHorizontalRailEnabled="{TemplateBinding ScrollViewer.IsHorizontalRailEnabled}"
+                            IsTabStop="False"
+                            IsVerticalRailEnabled="{TemplateBinding ScrollViewer.IsVerticalRailEnabled}"
+                            VerticalScrollBarVisibility="{TemplateBinding ScrollViewer.VerticalScrollBarVisibility}"
+                            VerticalScrollMode="{TemplateBinding ScrollViewer.VerticalScrollMode}"
+                            ZoomMode="Disabled" />
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>

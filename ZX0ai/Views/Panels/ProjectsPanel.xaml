@@ -1,0 +1,213 @@
+<UserControl
+    x:Class="ZX0ai.Views.Panels.ProjectsPanel"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="using:ZX0ai.ViewModels"
+    mc:Ignorable="d">
+
+    <UserControl.Resources>
+        <!--
+            The whole row is one Button, exactly like the chat-history row above it in
+            the rail: a selection plane underneath, everything else on top. The "..." is
+            a Button nested inside it — WinUI marks the pointer event handled at the
+            inner control, so its click never also opens the project.
+        -->
+        <DataTemplate x:Key="ProjectRowTemplate" x:DataType="vm:ProjectRow">
+            <Grid Margin="0,0,0,2">
+                <Border
+                    Background="{ThemeResource SelectedBrush}"
+                    BorderBrush="{ThemeResource HairlineBrush}"
+                    BorderThickness="1"
+                    CornerRadius="{StaticResource RadiusSmall}"
+                    Visibility="{x:Bind SelectionVisibility}" />
+
+                <Button
+                    AutomationProperties.Name="{x:Bind Name}"
+                    Click="OnProjectRowClick"
+                    HorizontalContentAlignment="Stretch"
+                    Padding="{StaticResource RowPadding}"
+                    MinHeight="40"
+                    Style="{StaticResource RowButtonStyle}"
+                    Tag="{x:Bind Id}">
+                    <Grid ColumnSpacing="{StaticResource Space200}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <Path
+                            Grid.Column="0"
+                            Data="M3 7 A1 1 0 0 1 4 6 H9 L11 8 H20 A1 1 0 0 1 21 9 V18 A1 1 0 0 1 20 19 H4 A1 1 0 0 1 3 18 Z"
+                            Style="{StaticResource IconSmallStyle}"
+                            VerticalAlignment="Top"
+                            Margin="0,2,0,0" />
+
+                        <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
+                            <TextBlock
+                                FontFamily="{StaticResource AppFontFamily}"
+                                FontSize="{StaticResource FontSizeSmall}"
+                                Foreground="{ThemeResource InkBrush}"
+                                Text="{x:Bind Name}"
+                                TextTrimming="CharacterEllipsis" />
+
+                            <!-- Up to two recent chats, or a quiet "No chats". -->
+                            <ItemsControl
+                                ItemsSource="{x:Bind RecentChats}"
+                                Visibility="{x:Bind HasChatsVisibility}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:ProjectChatRow">
+                                        <Grid ColumnSpacing="{StaticResource Space100}">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock
+                                                Grid.Column="0"
+                                                FontFamily="{StaticResource AppFontFamily}"
+                                                FontSize="{StaticResource FontSizeMicro}"
+                                                Foreground="{ThemeResource InkTertiaryBrush}"
+                                                Text="{x:Bind Title}"
+                                                TextTrimming="CharacterEllipsis" />
+                                            <Ellipse
+                                                Grid.Column="1"
+                                                Width="5"
+                                                Height="5"
+                                                Fill="{ThemeResource AccentBrush}"
+                                                VerticalAlignment="Center"
+                                                Visibility="{x:Bind ActiveVisibility}" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock
+                                FontFamily="{StaticResource AppFontFamily}"
+                                FontSize="{StaticResource FontSizeMicro}"
+                                Foreground="{ThemeResource InkTertiaryBrush}"
+                                Opacity="0.7"
+                                Text="No chats"
+                                Visibility="{x:Bind NoChatsVisibility}" />
+                            <TextBlock
+                                FontFamily="{StaticResource AppFontFamily}"
+                                FontSize="{StaticResource FontSizeMicro}"
+                                Foreground="{ThemeResource DangerBrush}"
+                                Text="Folder not found"
+                                Visibility="{x:Bind MissingVisibility}" />
+                        </StackPanel>
+
+                        <Button
+                            Grid.Column="2"
+                            Width="26"
+                            Height="26"
+                            AutomationProperties.Name="Project actions"
+                            Click="OnProjectMenuClick"
+                            Style="{StaticResource IconButtonStyle}"
+                            Tag="{x:Bind Id}"
+                            VerticalAlignment="Top">
+                            <Path
+                                Data="M6 12 A0.9 0.9 0 1 0 6 12.1 Z M12 12 A0.9 0.9 0 1 0 12 12.1 Z M18 12 A0.9 0.9 0 1 0 18 12.1 Z"
+                                Stroke="{ThemeResource InkSecondaryBrush}"
+                                StrokeThickness="2.2"
+                                Style="{StaticResource IconSmallStyle}" />
+                        </Button>
+                    </Grid>
+                </Button>
+            </Grid>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <!--
+        Every project the agent has been pointed at, beneath the chat list, exactly as
+        laid out in the reference. Opening one binds the workspace, so this list is the
+        second control (with the title-bar chip) that decides what the agent can touch —
+        a missing folder says so in place rather than only on click.
+    -->
+    <Grid RowSpacing="{StaticResource Space200}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- A transient message: a failed open, a rejected rename. -->
+        <Border
+            x:Name="Notice"
+            Grid.Row="0"
+            Padding="{StaticResource RowPadding}"
+            Background="{ThemeResource SunkenBrush}"
+            CornerRadius="{StaticResource RadiusSmall}"
+            Visibility="Collapsed">
+            <TextBlock
+                x:Name="NoticeText"
+                FontFamily="{StaticResource AppFontFamily}"
+                FontSize="{StaticResource FontSizeCaption}"
+                Foreground="{ThemeResource DangerBrush}"
+                TextWrapping="Wrap" />
+        </Border>
+
+        <ScrollViewer
+            Grid.Row="1"
+            HorizontalScrollMode="Disabled"
+            VerticalScrollBarVisibility="Auto">
+            <StackPanel Spacing="{StaticResource Space300}">
+
+                <StackPanel x:Name="PinnedSection" Spacing="{StaticResource Space100}">
+                    <TextBlock Style="{StaticResource SectionCaptionTextStyle}" Text="Pinned" />
+                    <ItemsControl x:Name="PinnedList" ItemTemplate="{StaticResource ProjectRowTemplate}" />
+                </StackPanel>
+
+                <StackPanel Spacing="{StaticResource Space100}">
+                    <Grid>
+                        <TextBlock Style="{StaticResource SectionCaptionTextStyle}" Text="Projects" />
+                        <Button
+                            Width="24"
+                            Height="24"
+                            HorizontalAlignment="Right"
+                            AutomationProperties.Name="Add project"
+                            Click="OnAddProjectClick"
+                            Style="{StaticResource IconButtonStyle}"
+                            ToolTipService.ToolTip="Add project">
+                            <Path
+                                Data="M12 5 V19 M5 12 H19"
+                                Style="{StaticResource IconSmallStyle}" />
+                        </Button>
+                    </Grid>
+                    <ItemsControl x:Name="ProjectList" ItemTemplate="{StaticResource ProjectRowTemplate}" />
+                    <TextBlock
+                        x:Name="EmptyNote"
+                        Style="{StaticResource SectionCaptionTextStyle}"
+                        Text="No projects yet."
+                        TextWrapping="Wrap"
+                        Visibility="Collapsed" />
+                </StackPanel>
+
+                <!-- Archived is opt-in: a working list that quietly grows to include
+                     finished projects is a working list nobody can scan any more. -->
+                <StackPanel x:Name="ArchivedSection" Spacing="{StaticResource Space100}" Visibility="Collapsed">
+                    <Button
+                        x:Name="ArchivedToggle"
+                        HorizontalAlignment="Left"
+                        AutomationProperties.Name="Show archived projects"
+                        Click="OnToggleArchivedClick"
+                        Padding="{StaticResource RowPadding}"
+                        Style="{StaticResource FlatButtonStyle}">
+                        <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space100}">
+                            <Path
+                                x:Name="ArchivedChevron"
+                                Data="M9 6 L15 12 L9 18"
+                                Style="{StaticResource IconSmallStyle}" />
+                            <TextBlock
+                                x:Name="ArchivedToggleLabel"
+                                Style="{StaticResource SectionCaptionTextStyle}" />
+                        </StackPanel>
+                    </Button>
+                    <ItemsControl
+                        x:Name="ArchivedList"
+                        ItemTemplate="{StaticResource ProjectRowTemplate}"
+                        Visibility="Collapsed" />
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

@@ -1,0 +1,31 @@
+<Project>
+
+  <PropertyGroup>
+    <LangVersion>12.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+
+  <PropertyGroup Label="Product">
+    <Product>ZX0ai</Product>
+    <Company>ZX0ai</Company>
+    <Authors>ZX0ai</Authors>
+    <Version>0.1.0</Version>
+    <NeutralLanguage>en-US</NeutralLanguage>
+  </PropertyGroup>
+
+  <!--
+    XAML/WinRT source generators emit code we do not own. Silence only the
+    diagnostics they are structurally incapable of satisfying; everything
+    written by hand stays under warnings-as-errors.
+  -->
+  <PropertyGroup>
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);CS8669;CS1591;NU1701</WarningsNotAsErrors>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,44 @@
+## Build output
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+artifacts/
+*.binlog
+
+## MSIX / packaging
+AppPackages/
+BundleArtifacts/
+*.appx
+*.appxbundle
+*.msix
+*.msixbundle
+*.pfx
+*.cer
+Generated Files/
+
+## Visual Studio / Rider / VS Code
+.vs/
+.idea/
+*.user
+*.suo
+*.userprefs
+.vscode/*
+!.vscode/launch.json
+!.vscode/tasks.json
+!.vscode/extensions.json
+
+## NuGet
+*.nupkg
+packages/
+!packages/build/
+
+## Local secrets — API keys live here and must never be committed
+appsettings.local.json
+secrets.json
+.env
+
+## OS
+Thumbs.db
+desktop.ini
+.DS_Store

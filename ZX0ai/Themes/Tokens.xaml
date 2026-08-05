@@ -3,10 +3,11 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!--
-        Design tokens for ZX0ai — reference design match.
+        Design tokens for ZX0ai — premium Windows 11 AI workspace.
 
-        Light theme (reference): soft monochrome workspace.
-        Dark theme: inverted equivalent, same visual hierarchy.
+        Light theme: soft warm-neutral surfaces with cool blue-cyan accent.
+        Dark theme: deep charcoal with the same blue-cyan accent.
+        Six color ramps: primary (blue-cyan), secondary, accent, success, warning, error.
     -->
 
     <ResourceDictionary.ThemeDictionaries>
@@ -36,19 +37,28 @@
             <SolidColorBrush x:Key="PressedBrush" Color="#000000" Opacity="0.065" />
             <SolidColorBrush x:Key="SelectedBrush" Color="#FFFFFF" Opacity="0.72" />
 
-            <!-- Accent: monochrome dark for send/action, not blue. -->
-            <SolidColorBrush x:Key="AccentBrush" Color="#111111" />
-            <SolidColorBrush x:Key="AccentPressedBrush" Color="#111111" Opacity="0.7" />
-            <SolidColorBrush x:Key="AccentSoftBrush" Color="#111111" Opacity="0.08" />
-            <SolidColorBrush x:Key="AccentInkBrush" Color="#111111" />
+            <!-- Accent: cool ZX0ai blue-cyan. -->
+            <SolidColorBrush x:Key="AccentBrush" Color="#0067C0" />
+            <SolidColorBrush x:Key="AccentPressedBrush" Color="#00549E" />
+            <SolidColorBrush x:Key="AccentSoftBrush" Color="#0067C0" Opacity="0.10" />
+            <SolidColorBrush x:Key="AccentInkBrush" Color="#0067C0" />
+
+            <!-- Success: restrained green. -->
+            <SolidColorBrush x:Key="SuccessBrush" Color="#0F7B0F" />
+
+            <!-- Ultra Mode: amber/orange/red energy. -->
+            <SolidColorBrush x:Key="UltraAmberBrush" Color="#E89B20" />
+            <SolidColorBrush x:Key="UltraOrangeBrush" Color="#E0650F" />
+            <SolidColorBrush x:Key="UltraRedBrush" Color="#D04A28" />
+            <SolidColorBrush x:Key="UltraGoldBrush" Color="#F0BE18" />
 
             <!-- Hero question text, painted behind everything on empty state. -->
             <SolidColorBrush x:Key="HeroInkBrush" Color="#111111" Opacity="0.18" />
 
-            <!-- Amber for full-access warning chip. -->
+            <!-- Warning: amber for full-access chip. -->
             <SolidColorBrush x:Key="WarnBrush" Color="#C2600A" />
 
-            <!-- Red for actual failures. -->
+            <!-- Error: restrained red. -->
             <SolidColorBrush x:Key="DangerBrush" Color="#C02B2B" />
 
             <SolidColorBrush x:Key="ScrollThumbBrush" Color="#000000" Opacity="0.20" />
@@ -82,14 +92,24 @@
             <SolidColorBrush x:Key="PressedBrush" Color="#FFFFFF" Opacity="0.09" />
             <SolidColorBrush x:Key="SelectedBrush" Color="#FFFFFF" Opacity="0.18" />
 
-            <SolidColorBrush x:Key="AccentBrush" Color="#F3F3F3" />
-            <SolidColorBrush x:Key="AccentPressedBrush" Color="#F3F3F3" Opacity="0.7" />
-            <SolidColorBrush x:Key="AccentSoftBrush" Color="#F3F3F3" Opacity="0.12" />
-            <SolidColorBrush x:Key="AccentInkBrush" Color="#F3F3F3" />
+            <SolidColorBrush x:Key="AccentBrush" Color="#4CC2FF" />
+            <SolidColorBrush x:Key="AccentPressedBrush" Color="#62D0FF" />
+            <SolidColorBrush x:Key="AccentSoftBrush" Color="#4CC2FF" Opacity="0.14" />
+            <SolidColorBrush x:Key="AccentInkBrush" Color="#4CC2FF" />
+
+            <!-- Success. -->
+            <SolidColorBrush x:Key="SuccessBrush" Color="#6BB26B" />
+
+            <!-- Ultra Mode: amber/orange/red energy. -->
+            <SolidColorBrush x:Key="UltraAmberBrush" Color="#F0B050" />
+            <SolidColorBrush x:Key="UltraOrangeBrush" Color="#F08540" />
+            <SolidColorBrush x:Key="UltraRedBrush" Color="#E0655E" />
+            <SolidColorBrush x:Key="UltraGoldBrush" Color="#F5D040" />
 
             <SolidColorBrush x:Key="HeroInkBrush" Color="#F3F3F3" Opacity="0.18" />
             <SolidColorBrush x:Key="WarnBrush" Color="#F08A3C" />
             <SolidColorBrush x:Key="DangerBrush" Color="#E0554F" />
+            <SolidColorBrush x:Key="SuccessBrush" Color="#6BB26B" />
 
             <SolidColorBrush x:Key="ScrollThumbBrush" Color="#FFFFFF" Opacity="0.22" />
 

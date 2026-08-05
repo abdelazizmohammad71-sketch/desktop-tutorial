@@ -49,6 +49,9 @@ public sealed class ChatMessage : INotifyPropertyChanged
     /// </summary>
     public string? TierDisplayName { get; init; }
 
+    /// <summary>Compact time label for the metadata line, e.g. "14:30".</summary>
+    public string TimeText => Timestamp.ToLocalTime().ToString("HH:mm");
+
     /// <summary>True while tokens are still streaming into <see cref="Content"/>.</summary>
     public bool IsStreaming
     {

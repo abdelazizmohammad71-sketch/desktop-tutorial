@@ -8,7 +8,6 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Windows.System;
-using ZX0ai.Core.Git;
 using ZX0ai.Core.Models;
 using ZX0ai.Core.Services;
 using ZX0ai.Services;
@@ -62,18 +61,14 @@ public sealed partial class ShellPage : Page
     // message that is streaming, so the transcript no longer rebuilds on every delta.
 
     /// <summary>Which dock view is showing: run, terminal or files.</summary>
-    private string _dockTab = "run";
-
-    /// <summary>Guards the breadcrumb's branch lookup against a bind that happened after it started.</summary>
-    private int _breadcrumbToken;
+    private string _dockTab = "changes";
 
     /// <summary>Effort steps, with the one caveat worth stating on the menu.</summary>
     private static readonly (string Value, string Label, string Note)[] EffortLevels =
     [
-        ("light", "Light", ""),
+        ("low", "Low", ""),
         ("medium", "Medium", ""),
         ("high", "High", ""),
-        ("extra-high", "Extra High", ""),
         ("ultra", "Ultra", "Uses more of your limit"),
     ];
 
@@ -103,30 +98,27 @@ public sealed partial class ShellPage : Page
 
         ThreadListView.ItemsSource = _vm.Messages;
 
-        ToolList.ItemsSource = _vm.ToolRuns;
+        // Tool execution list removed — operations now appear inline in assistant responses.
         _vm.ToolRuns.CollectionChanged += (_, _) => ApplyRunPanel();
 
-        UserName.Text = _vm.UserName;
-        UserInitial.Text = _vm.UserName.Length > 0
-            ? _vm.UserName[..1].ToUpperInvariant()
-            : "?";
         ApplyTheme();
         ApplyHistoryState();
         ApplyModelChip();
         ApplyAccessChip();
         ApplyWorkspace();
 
-        SelectDockTab("run");
+        SelectDockTab("changes");
         ApplyRunPanel();
         ApplySurfaceState();
 
         // Opening a project is why someone would click it in the first place; showing
         // what just got bound is more useful than leaving the dock on Run.
-        RailProjects.ProjectOpened += (_, _) => SelectDockTab("files");
+        RailProjects.ProjectOpened += (_, _) =>
+        {
+            SelectDockTab("files");
+        };
 
-        CredentialNotice.Visibility = _vm.IsConfigured
-            ? Visibility.Collapsed
-            : Visibility.Visible;
+        // Credential notice removed — no provider config UI remains.
 
         Loaded += (_, _) => Prompt.Focus(FocusState.Programmatic);
 
@@ -228,6 +220,16 @@ public sealed partial class ShellPage : Page
 
         _railOpen = !_railOpen;
         _railUserClosed = !_railOpen;
+        ApplyPanelState(animate: true);
+    }
+
+    private void OnCollapseRailClick(object sender, RoutedEventArgs e)
+    {
+        _ = sender;
+        _ = e;
+
+        _railOpen = false;
+        _railUserClosed = true;
         ApplyPanelState(animate: true);
     }
 
@@ -655,29 +657,17 @@ public sealed partial class ShellPage : Page
     {
         _dockTab = tab;
 
-        RunView.Visibility = tab == "run" ? Visibility.Visible : Visibility.Collapsed;
-        TerminalView.Visibility = tab == "terminal" ? Visibility.Visible : Visibility.Collapsed;
+        ChangesView.Visibility = tab == "changes" ? Visibility.Visible : Visibility.Collapsed;
         FilesView.Visibility = tab == "files" ? Visibility.Visible : Visibility.Collapsed;
-        ActivityView.Visibility = tab == "activity" ? Visibility.Visible : Visibility.Collapsed;
 
-        ApplyTabState(RunTabButton, RunTabIcon, tab == "run");
-        ApplyTabState(TerminalTabButton, TerminalTabIcon, tab == "terminal");
+        ApplyTabState(ChangesTabButton, ChangesTabIcon, tab == "changes");
         ApplyTabState(FilesTabButton, FilesTabIcon, tab == "files");
-        ApplyTabState(ActivityTabButton, ActivityTabIcon, tab == "activity");
 
         DockTitle.Text = tab switch
         {
-            "terminal" => "Terminal",
             "files" => "Files",
-            "activity" => "Activity",
-            _ => "Tool Execution",
+            _ => "Changes",
         };
-
-        // When opening activity, start a demo stream once for visibility
-        if (tab == "activity")
-        {
-            _ = ActivityView.StartDemoAsync();
-        }
     }
 
     /// <summary>Paints one icon-only tab of a segmented control.</summary>
@@ -694,13 +684,15 @@ public sealed partial class ShellPage : Page
         label.Style = SharedStyle(selected ? "TabLabelSelectedStyle" : "TabLabelStyle");
     }
 
-    private async void OnHelpClick(object sender, RoutedEventArgs e)
+    private void OnHelpClick(object sender, RoutedEventArgs e)
     {
+        _ = sender;
         _ = e;
 
-        var dialog = new SettingsDialog(App.GetService<IConfigService>());
-        dialog.XamlRoot = this.XamlRoot;
-        await dialog.ShowAsync();
+        // Settings dialog removed per product direction. The about button now
+        // cycles the theme — the same action as the title-bar sun/moon button —
+        // so the sidebar footer stays useful without exposing provider config.
+        OnThemeClick(this, new RoutedEventArgs());
     }
 
     // =========================== Workspace =============================
@@ -744,13 +736,7 @@ public sealed partial class ShellPage : Page
             _vm.WorkspacePath ?? "Choose a folder the agent may work in");
 
         Breadcrumb.Visibility = _vm.IsWorkspaceBound ? Visibility.Visible : Visibility.Collapsed;
-        BreadcrumbProject.Text = _vm.WorkspaceName;
-
-        // Reset immediately rather than leaving a stale branch showing while the real
-        // one is looked up — a branch name from the folder that used to be bound is
-        // wrong information, not just old information.
-        BreadcrumbBranchSegment.Visibility = Visibility.Collapsed;
-        _ = RefreshBreadcrumbBranchAsync(_vm.WorkspacePath);
+        BreadcrumbProject.Content = _vm.WorkspaceName;
     }
 
     /// <summary>
@@ -761,42 +747,6 @@ public sealed partial class ShellPage : Page
     /// vanished all mean the same thing here — the breadcrumb quietly omits the branch
     /// segment rather than showing an error for a purely decorative label.
     /// </remarks>
-    private async Task RefreshBreadcrumbBranchAsync(string? root)
-    {
-        if (string.IsNullOrWhiteSpace(root))
-        {
-            return;
-        }
-
-        var token = ++_breadcrumbToken;
-
-        try
-        {
-            var snapshot = await App.GetService<IGitRepositoryService>()
-                .InspectAsync(root)
-                .ConfigureAwait(true);
-
-            // A newer bind may have started and finished while this one was in flight.
-            if (token != _breadcrumbToken)
-            {
-                return;
-            }
-
-            var branch = snapshot.State == GitRepositoryState.Ready
-                ? GitBranchName.Parse(snapshot.BranchSummary)
-                : null;
-
-            BreadcrumbBranch.Text = branch;
-            BreadcrumbBranchSegment.Visibility = branch is null
-                ? Visibility.Collapsed
-                : Visibility.Visible;
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or
-                                        ArgumentException or DirectoryNotFoundException)
-        {
-        }
-    }
-
     // ========================== Turn lifecycle =========================
 
     private void OnPromptKeyDown(object sender, KeyRoutedEventArgs e)
@@ -894,7 +844,7 @@ public sealed partial class ShellPage : Page
     /// <summary>The costly tiers: worth a last look before spending on them.</summary>
     private static readonly HashSet<string> ConfirmBeforeSendTiers = new(StringComparer.OrdinalIgnoreCase)
     {
-        "zax-pro", "zax-ultra-full-max",
+        "zax-2.5 pro", "zax-3.4 ultra",
     };
 
     private async Task SubmitAsync()
@@ -1146,44 +1096,11 @@ public sealed partial class ShellPage : Page
         ErrorBanner.Visibility = has ? Visibility.Visible : Visibility.Collapsed;
     }
 
-    /// <summary>Reports the turn that ran. Every value here was measured.</summary>
+    /// <summary>Updates the compact tokens/speed indicators in the right drawer.</summary>
     private void ApplyRunPanel()
     {
-        var idle = _vm.RunState == RunState.Idle;
-
-        RunDetail.Visibility = idle ? Visibility.Collapsed : Visibility.Visible;
-        ToolSection.Visibility = _vm.ToolRuns.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
-        RunEmpty.Visibility = idle && _vm.ToolRuns.Count == 0
-            ? Visibility.Visible
-            : Visibility.Collapsed;
-
-        if (idle)
-        {
-            return;
-        }
-
-        RunStatus.Text = _vm.RunState switch
-        {
-            RunState.Sending => "Sending",
-            RunState.Streaming => "Streaming",
-            RunState.UsingTools => "Working in the folder",
-            RunState.Done => "Done",
-            RunState.Failed => "Failed",
-            RunState.Cancelled => "Stopped",
-            _ => "Idle",
-        };
-
-        RunDot.Style = SharedStyle(_vm.RunState switch
-        {
-            RunState.Sending or RunState.Streaming or RunState.UsingTools => "RunDotActiveStyle",
-            RunState.Failed => "RunDotFailedStyle",
-            _ => "RunDotStyle",
-        });
-
-        RunModel.Text = _vm.ModelName;
         RunTokens.Text = _vm.TurnTokens.ToString("N0");
         RunRate.Text = $"{_vm.TokensPerSecond:F1}/s";
-        RunElapsed.Text = $"{_vm.ElapsedSeconds:F1}s";
     }
 
     // ============================= Helpers =============================

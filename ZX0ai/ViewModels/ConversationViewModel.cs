@@ -217,7 +217,7 @@ public sealed partial class ConversationViewModel : ObservableObject
     /// engage; surfacing it would make the product look like it changed when only the
     /// routing did. Every visible surface reads this or <see cref="ModelBadge"/>.
     /// </remarks>
-    public string ModelName => _config.ActiveTier.Key;
+    public string ModelName => _config.ActiveTier.DisplayName;
 
     /// <summary>The effort word shown beside the capability on the composer pill.</summary>
     public string ModelBadge => Effort switch
@@ -231,12 +231,13 @@ public sealed partial class ConversationViewModel : ObservableObject
     };
 
     /// <summary>Every configured capability, in configuration order.</summary>
-    public IReadOnlyList<string> Tiers => [.. _config.Tiers.Select(tier => tier.Key)];
+    public IReadOnlyList<string> Tiers => [.. _config.Tiers.Select(tier => tier.DisplayName)];
 
     /// <summary>Selects a capability for this session.</summary>
-    public void SelectTier(string key)
+    public void SelectTier(string displayName)
     {
-        if (!_config.SelectActiveTier(key))
+        var tier = _config.Tiers.FirstOrDefault(t => t.DisplayName == displayName);
+        if (tier is null || !_config.SelectActiveTier(tier.Key))
         {
             return;
         }

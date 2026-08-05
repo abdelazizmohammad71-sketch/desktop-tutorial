@@ -144,18 +144,18 @@
                Background="{ThemeResource RaisedBrush}"
                BorderBrush="{ThemeResource HairlineBrush}"
                BorderThickness="0,0,1,0">
-               <Grid RowSpacing="16">
+               <Grid RowSpacing="14">
                    <Grid.RowDefinitions>
                        <RowDefinition Height="Auto" />
                        <RowDefinition Height="Auto" />
                        <RowDefinition Height="*" />
-                       <RowDefinition Height="Auto" />
                    </Grid.RowDefinitions>
 
-                   <!-- History header with new-chat button -->
+                   <!-- Projects header with collapse + new-chat -->
                    <Grid Grid.Row="0" ColumnSpacing="8">
                        <Grid.ColumnDefinitions>
                            <ColumnDefinition Width="*" />
+                           <ColumnDefinition Width="Auto" />
                            <ColumnDefinition Width="Auto" />
                        </Grid.ColumnDefinitions>
                        <TextBlock
@@ -164,7 +164,7 @@
                            FontSize="{StaticResource FontSizeSmall}"
                            FontWeight="SemiBold"
                            Foreground="{ThemeResource InkBrush}"
-                           Text="History"
+                           Text="Projects"
                            VerticalAlignment="Center" />
                        <Button
                            Grid.Column="1"
@@ -176,6 +176,18 @@
                            ToolTipService.ToolTip="New chat (Ctrl+N)">
                            <Path
                                Data="M12 5 V19 M5 12 H19"
+                               Style="{StaticResource IconSmallStyle}" />
+                       </Button>
+                       <Button
+                           Grid.Column="2"
+                           Width="28"
+                           Height="28"
+                           AutomationProperties.Name="Collapse sidebar"
+                           Click="OnCollapseRailClick"
+                           Style="{StaticResource IconButtonStyle}"
+                           ToolTipService.ToolTip="Collapse sidebar">
+                           <Path
+                               Data="M15 6 L9 12 L15 18"
                                Style="{StaticResource IconSmallStyle}" />
                        </Button>
                    </Grid>
@@ -202,135 +214,28 @@
                                x:Name="SearchBox"
                                Grid.Column="1"
                                FontSize="{StaticResource FontSizeCaption}"
-                               PlaceholderText="Search chats..."
+                               PlaceholderText="Search..."
                                Style="{StaticResource BareTextBoxStyle}"
                                TextChanged="OnSearchChanged"
                                VerticalAlignment="Center" />
                        </Grid>
                    </Border>
 
+                   <!-- Projects list with nested chats -->
                    <ScrollViewer
                        Grid.Row="2"
                        HorizontalScrollMode="Disabled"
                        VerticalScrollBarVisibility="Auto"
                        VerticalScrollMode="Auto">
                        <StackPanel Spacing="12">
-                           <ItemsControl x:Name="HistoryList">
-                               <ItemsControl.ItemTemplate>
-                                   <DataTemplate x:DataType="vm:HistoryRow">
-                                       <Grid Margin="0,0,0,2">
-                                           <Border
-                                               Background="{ThemeResource SelectedBrush}"
-                                               BorderBrush="{ThemeResource HairlineBrush}"
-                                               BorderThickness="1"
-                                               CornerRadius="{StaticResource RadiusSmall}"
-                                               Visibility="{x:Bind SelectionVisibility}" />
-                                           <Button
-                                               AutomationProperties.Name="{x:Bind Title}"
-                                               Click="OnHistoryRowClick"
-                                               Style="{StaticResource RowButtonStyle}"
-                                               Tag="{x:Bind Id}">
-                                               <Grid ColumnSpacing="8">
-                                                   <Grid.ColumnDefinitions>
-                                                       <ColumnDefinition Width="*" />
-                                                       <ColumnDefinition Width="Auto" />
-                                                   </Grid.ColumnDefinitions>
-                                                   <TextBlock
-                                                       Grid.Column="0"
-                                                       Style="{StaticResource RowTextStyle}"
-                                                       Text="{x:Bind Title}" />
-                                                   <TextBlock
-                                                       Grid.Column="1"
-                                                       FontFamily="{StaticResource AppFontFamily}"
-                                                       FontSize="{StaticResource FontSizeMicro}"
-                                                       Foreground="{ThemeResource InkTertiaryBrush}"
-                                                       Text="{x:Bind Age}"
-                                                       VerticalAlignment="Center" />
-                                               </Grid>
-                                           </Button>
-                                       </Grid>
-                                   </DataTemplate>
-                               </ItemsControl.ItemTemplate>
-                           </ItemsControl>
-
-                           <!-- Shown only when nothing has been saved yet. -->
+                           <panels:ProjectsPanel x:Name="RailProjects" />
                            <TextBlock
                                x:Name="HistoryEmpty"
                                Style="{StaticResource SectionCaptionTextStyle}"
-                               Text="No conversations yet."
+                               Text="No projects yet. Open a folder to begin."
                                TextWrapping="Wrap" />
-
-                           <TextBlock
-                               Style="{StaticResource SidebarSectionHeaderStyle}"
-                               Text="Workspaces" />
-                           <panels:ProjectsPanel x:Name="RailProjects" />
                        </StackPanel>
                    </ScrollViewer>
-
-                   <!-- Footer: user identity + settings + upgrade -->
-                   <StackPanel Grid.Row="3" Spacing="8">
-                       <Button
-                           x:Name="UpgradeButton"
-                           HorizontalAlignment="Stretch"
-                           Padding="12,10"
-                           Click="OnModelClick"
-                           CornerRadius="{StaticResource RadiusPill}"
-                           Style="{StaticResource UpgradeButtonStyle}">
-                           <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                               <Path
-                                   Data="M12 3 L14.5 9 L21 9.5 L16 14 L17.5 21 L12 17.5 L6.5 21 L8 14 L3 9.5 L9.5 9 Z"
-                                   Style="{StaticResource IconSmallStyle}" />
-                               <TextBlock
-                                   FontFamily="{StaticResource AppFontFamily}"
-                                   FontSize="{StaticResource FontSizeCaption}"
-                                   FontWeight="SemiBold"
-                                   Text="Upgrade to Pro"
-                                   VerticalAlignment="Center" />
-                           </StackPanel>
-                       </Button>
-
-                       <Grid Height="40" ColumnSpacing="{StaticResource Space200}">
-                           <Grid.ColumnDefinitions>
-                               <ColumnDefinition Width="Auto" />
-                               <ColumnDefinition Width="*" />
-                               <ColumnDefinition Width="Auto" />
-                           </Grid.ColumnDefinitions>
-
-                           <Grid Grid.Column="0" Width="32" Height="32">
-                               <Ellipse Fill="{ThemeResource AccentBrush}" />
-                               <TextBlock
-                                   x:Name="UserInitial"
-                                   FontFamily="{StaticResource AppFontFamily}"
-                                   FontSize="{StaticResource FontSizeCaption}"
-                                   FontWeight="SemiBold"
-                                   Foreground="{ThemeResource InkOnAccentBrush}"
-                                   HorizontalAlignment="Center"
-                                   VerticalAlignment="Center" />
-                           </Grid>
-
-                           <TextBlock
-                               x:Name="UserName"
-                               Grid.Column="1"
-                               FontFamily="{StaticResource AppFontFamily}"
-                               FontSize="{StaticResource FontSizeCaption}"
-                               Foreground="{ThemeResource InkBrush}"
-                               TextTrimming="CharacterEllipsis"
-                               VerticalAlignment="Center" />
-
-                           <Button
-                               Grid.Column="2"
-                               Width="32"
-                               Height="32"
-                               AutomationProperties.Name="About ZX0ai"
-                               Click="OnHelpClick"
-                               Style="{StaticResource IconButtonStyle}"
-                               ToolTipService.ToolTip="About">
-                               <Path
-                                   Data="M12 3 A9 9 0 1 0 12 21 A9 9 0 1 0 12 3 Z M10.2 9.3 A1.8 1.8 0 1 1 12.7 11.4 C12 12 11.7 12.4 11.7 13.2 M11.7 15.8 V15.9"
-                                   Style="{StaticResource IconSmallStyle}" />
-                           </Button>
-                       </Grid>
-                   </StackPanel>
                </Grid>
             </Border>
 
@@ -425,7 +330,32 @@
                         </ListView.ItemsPanel>
                         <ListView.ItemTemplate>
                             <DataTemplate x:DataType="models:ChatMessage">
-                                <StackPanel Spacing="14">
+                                <StackPanel Spacing="10">
+                                    <!-- Assistant metadata line: model alias, state, duration, time -->
+                                    <StackPanel
+                                        Visibility="{x:Bind Role, Converter={StaticResource RoleToVisibilityConverter}, ConverterParameter=Assistant}"
+                                        Orientation="Horizontal"
+                                        Spacing="8"
+                                        Opacity="0.6">
+                                        <TextBlock
+                                            FontFamily="{StaticResource MonoFontFamily}"
+                                            FontSize="{StaticResource FontSizeMicro}"
+                                            Foreground="{ThemeResource InkSecondaryBrush}"
+                                            Text="ZX0ai" />
+                                        <Border Width="1" Height="10" Background="{ThemeResource HairlineStrongBrush}" />
+                                        <TextBlock
+                                            FontFamily="{StaticResource MonoFontFamily}"
+                                            FontSize="{StaticResource FontSizeMicro}"
+                                            Foreground="{ThemeResource InkSecondaryBrush}"
+                                            Text="{x:Bind TierDisplayName, Mode=OneWay}" />
+                                        <Border Width="1" Height="10" Background="{ThemeResource HairlineStrongBrush}" />
+                                        <TextBlock
+                                            FontFamily="{StaticResource MonoFontFamily}"
+                                            FontSize="{StaticResource FontSizeMicro}"
+                                            Foreground="{ThemeResource InkTertiaryBrush}"
+                                            Text="{x:Bind TimeText, Mode=OneWay}" />
+                                    </StackPanel>
+
                                     <!-- Assistant: render markdown inline, no surrounding card -->
                                     <controls:MarkdownView
                                         Visibility="{x:Bind Role, Converter={StaticResource RoleToVisibilityConverter}, ConverterParameter=Assistant}"
@@ -433,14 +363,21 @@
                                         MaxWidth="860"
                                         HorizontalAlignment="Left" />
 
-                                    <!-- User: plain flowing text aligned right, no bubble/card -->
-                                    <TextBlock
+                                    <!-- User: compact bubble aligned right -->
+                                    <Border
                                         Visibility="{x:Bind Role, Converter={StaticResource RoleToVisibilityConverter}, ConverterParameter=User}"
-                                        Text="{x:Bind Content, Mode=OneWay}"
-                                        Style="{StaticResource AssistantTextStyle}"
-                                        TextWrapping="Wrap"
-                                        MaxWidth="860"
-                                        HorizontalAlignment="Right" />
+                                        Background="{ThemeResource SunkenBrush}"
+                                        BorderBrush="{ThemeResource HairlineBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="{StaticResource RadiusPanel}"
+                                        MaxWidth="520"
+                                        Padding="12,8"
+                                        HorizontalAlignment="Right">
+                                        <TextBlock
+                                            Text="{x:Bind Content, Mode=OneWay}"
+                                            Style="{StaticResource AssistantTextStyle}"
+                                            TextWrapping="Wrap" />
+                                    </Border>
                                 </StackPanel>
                             </DataTemplate>
                         </ListView.ItemTemplate>
@@ -462,10 +399,8 @@
                         <StackPanel Spacing="14">
 
                             <!--
-                                Where a message actually goes: the bound folder, where
-                                it runs, and — when the folder is a git repository — the
-                                branch it will land on. Hidden with no folder bound,
-                                since none of the three has an answer yet.
+                                Session strip: current project name + chooser only.
+                                No branch, no Local/Cloud, no model, no provider.
                             -->
                             <StackPanel
                                 x:Name="Breadcrumb"
@@ -476,44 +411,20 @@
                                 <Path
                                     Data="M3 7 A1 1 0 0 1 4 6 H9 L11 8 H20 A1 1 0 0 1 21 9 V18 A1 1 0 0 1 20 19 H4 A1 1 0 0 1 3 18 Z"
                                     Style="{StaticResource IconSmallStyle}" />
-                                <TextBlock
+                                <Button
                                     x:Name="BreadcrumbProject"
-                                    FontFamily="{StaticResource AppFontFamily}"
-                                    FontSize="{StaticResource FontSizeMicro}"
-                                    Foreground="{ThemeResource InkSecondaryBrush}"
-                                    MaxWidth="160"
-                                    TextTrimming="CharacterEllipsis"
-                                    VerticalAlignment="Center" />
-
-                                <Border Width="1" Height="12" Background="{ThemeResource HairlineStrongBrush}" />
-                                <Path
-                                    Data="M4 5 H20 A1 1 0 0 1 21 6 V15 A1 1 0 0 1 20 16 H4 A1 1 0 0 1 3 15 V6 A1 1 0 0 1 4 5 Z M9 20 H15 M12 16 V20"
-                                    Style="{StaticResource IconSmallStyle}" />
-                                <TextBlock
-                                    FontFamily="{StaticResource MonoFontFamily}"
-                                    FontSize="{StaticResource FontSizeMicro}"
-                                    Foreground="{ThemeResource InkSecondaryBrush}"
-                                    Text="Local"
-                                    VerticalAlignment="Center" />
-
-                                <StackPanel
-                                    x:Name="BreadcrumbBranchSegment"
-                                    Orientation="Horizontal"
-                                    Spacing="{StaticResource Space150}"
-                                    Visibility="Collapsed">
-                                    <Border Width="1" Height="12" Background="{ThemeResource HairlineStrongBrush}" />
-                                    <Path
-                                        Data="M7 4 A2 2 0 1 0 7 4.01 Z M7 6 V18 M7 18 A2 2 0 1 0 7 18.01 Z M17 8 A2 2 0 1 0 17 8.01 Z M17 8 C17 11 14 11 11 11 C9 11 7 11 7 9"
-                                        Style="{StaticResource IconSmallStyle}" />
+                                    AutomationProperties.Name="Select project"
+                                    Click="OnWorkspaceClick"
+                                    Style="{StaticResource FlatButtonStyle}"
+                                    ToolTipService.ToolTip="Choose project"
+                                    Padding="4,2">
                                     <TextBlock
-                                        x:Name="BreadcrumbBranch"
-                                        FontFamily="{StaticResource MonoFontFamily}"
+                                        FontFamily="{StaticResource AppFontFamily}"
                                         FontSize="{StaticResource FontSizeMicro}"
                                         Foreground="{ThemeResource InkSecondaryBrush}"
-                                        MaxWidth="180"
-                                        TextTrimming="CharacterEllipsis"
-                                        VerticalAlignment="Center" />
-                                </StackPanel>
+                                        MaxWidth="200"
+                                        TextTrimming="CharacterEllipsis" />
+                                </Button>
                             </StackPanel>
 
                             <!-- A real failure, in the user's terms. Hidden when there is none. -->
@@ -693,23 +604,24 @@
                                 x:Name="DockTitle"
                                 FontFamily="{StaticResource AppFontFamily}"
                                 FontSize="{StaticResource FontSizeSmall}"
+                                FontWeight="SemiBold"
                                 Foreground="{ThemeResource InkBrush}"
                                 VerticalAlignment="Center" />
                             <Button
                                 Width="28"
                                 Height="28"
                                 HorizontalAlignment="Right"
-                                AutomationProperties.Name="Close panel (Ctrl+Shift+R)"
+                                AutomationProperties.Name="Close panel"
                                 Click="OnToggleRunPanelClick"
                                 Style="{StaticResource IconButtonStyle}"
-                                ToolTipService.ToolTip="Close panel (Ctrl+Shift+R)">
+                                ToolTipService.ToolTip="Close panel">
                                 <Path
                                     Data="M6 6 L18 18 M18 6 L6 18"
                                     Style="{StaticResource IconSmallStyle}" />
                             </Button>
                         </Grid>
 
-                        <!-- One dock, three views of the same workspace. -->
+                        <!-- Two tabs: Changes and Files -->
                         <Border
                             Grid.Row="1"
                             Height="32"
@@ -720,38 +632,23 @@
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
                                 <Button
-                                    x:Name="RunTabButton"
+                                    x:Name="ChangesTabButton"
                                     Grid.Column="0"
-                                    AutomationProperties.Name="Run"
+                                    AutomationProperties.Name="Changes"
                                     Click="OnDockTabClick"
                                     Style="{StaticResource TabStyle}"
-                                    Tag="run"
-                                    ToolTipService.ToolTip="Run">
+                                    Tag="changes"
+                                    ToolTipService.ToolTip="Changes">
                                     <Path
-                                        x:Name="RunTabIcon"
-                                        Data="M3 12 H8 L10 6 L14 18 L16 12 H21"
-                                        Style="{StaticResource TabIconStyle}" />
-                                </Button>
-                                <Button
-                                    x:Name="TerminalTabButton"
-                                    Grid.Column="1"
-                                    AutomationProperties.Name="Terminal"
-                                    Click="OnDockTabClick"
-                                    Style="{StaticResource TabStyle}"
-                                    Tag="terminal"
-                                    ToolTipService.ToolTip="Terminal">
-                                    <Path
-                                        x:Name="TerminalTabIcon"
-                                        Data="M4 6 A1 1 0 0 1 5 5 H19 A1 1 0 0 1 20 6 V18 A1 1 0 0 1 19 19 H5 A1 1 0 0 1 4 18 Z M7.5 10 L10.5 12.5 L7.5 15 M12.5 15 H16"
+                                        x:Name="ChangesTabIcon"
+                                        Data="M12 3 A9 9 0 1 0 12 21 A9 9 0 1 0 12 3 Z M12 7 V12 L15 14"
                                         Style="{StaticResource TabIconStyle}" />
                                 </Button>
                                 <Button
                                     x:Name="FilesTabButton"
-                                    Grid.Column="2"
+                                    Grid.Column="1"
                                     AutomationProperties.Name="Files"
                                     Click="OnDockTabClick"
                                     Style="{StaticResource TabStyle}"
@@ -762,73 +659,71 @@
                                         Data="M3 7 A1 1 0 0 1 4 6 H9 L11 8 H20 A1 1 0 0 1 21 9 V18 A1 1 0 0 1 20 19 H4 A1 1 0 0 1 3 18 Z"
                                         Style="{StaticResource TabIconStyle}" />
                                 </Button>
-                                <Button
-                                    x:Name="ActivityTabButton"
-                                    Grid.Column="3"
-                                    AutomationProperties.Name="Activity"
-                                    Click="OnDockTabClick"
-                                    Style="{StaticResource TabStyle}"
-                                    Tag="activity"
-                                    ToolTipService.ToolTip="Activity">
-                                    <Path
-                                        x:Name="ActivityTabIcon"
-                                        Data="M12 3 A9 9 0 1 0 12 21 A9 9 0 1 0 12 3 Z M9 12 H15"
-                                        Style="{StaticResource TabIconStyle}" />
-                                </Button>
                             </Grid>
                         </Border>
                     </Grid>
 
-                    <!--
-                        Measured facts about the turn that ran, and nothing else. Every
-                        value here was observed: the state came from the stream, the rate
-                        from characters over elapsed time, the model from the request that
-                        was sent. Before the first turn the panel is empty and says so.
-                    -->
                     <Grid Grid.Row="1">
-                        <StackPanel x:Name="RunView" Spacing="14">
-
-                        <!--
-                            The orb lives here rather than on the conversation surface.
-                            It is the one object in the product allowed colour, and on the
-                            empty state it competed with the question it was sitting on
-                            top of. In the panel it has room, it is present in both states,
-                            and it is visibly turning while a turn streams.
-                        -->
-                        <controls:OrbControl
-                            x:Name="Orb"
-                            Width="150"
-                            Height="150"
-                            HorizontalAlignment="Center" />
-
-                        <StackPanel x:Name="RunDetail" Spacing="10">
+                        <!-- Changes view -->
+                        <StackPanel x:Name="ChangesView" Spacing="12">
                             <StackPanel Spacing="3">
-                                <TextBlock Style="{StaticResource SectionCaptionTextStyle}" Text="STATUS" />
-                                <StackPanel Orientation="Horizontal" Spacing="7">
-                                    <Ellipse
-                                        x:Name="RunDot"
-                                        Width="7"
-                                        Height="7"
-                                        VerticalAlignment="Center" />
-                                    <TextBlock
-                                        x:Name="RunStatus"
-                                        FontFamily="{StaticResource AppFontFamily}"
-                                        FontSize="{StaticResource FontSizeSmall}"
-                                        Foreground="{ThemeResource InkBrush}"
-                                        VerticalAlignment="Center" />
-                                </StackPanel>
-                            </StackPanel>
-
-                            <StackPanel Spacing="3">
-                                <TextBlock Style="{StaticResource SectionCaptionTextStyle}" Text="MODEL" />
+                                <TextBlock Style="{StaticResource SectionCaptionTextStyle}" Text="CHANGED FILES" />
+                                <ItemsControl x:Name="ChangesList">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:HistoryRow">
+                                            <Border
+                                                Margin="0,0,0,4"
+                                                Padding="9,7"
+                                                Background="{ThemeResource SunkenBrush}"
+                                                BorderBrush="{ThemeResource HairlineBrush}"
+                                                BorderThickness="1"
+                                                CornerRadius="{StaticResource RadiusSmall}">
+                                                <Grid ColumnSpacing="8">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel Grid.Column="0" Spacing="2">
+                                                        <TextBlock
+                                                            FontFamily="{StaticResource MonoFontFamily}"
+                                                            FontSize="{StaticResource FontSizeMicro}"
+                                                            FontWeight="SemiBold"
+                                                            Foreground="{ThemeResource InkBrush}"
+                                                            Text="{x:Bind Title}"
+                                                            TextTrimming="CharacterEllipsis"
+                                                            TextWrapping="NoWrap" />
+                                                        <TextBlock
+                                                            Style="{StaticResource SectionCaptionTextStyle}"
+                                                            Text="{x:Bind Age}"
+                                                            TextTrimming="CharacterEllipsis"
+                                                            TextWrapping="NoWrap" />
+                                                    </StackPanel>
+                                                    <Border
+                                                        Grid.Column="1"
+                                                        Padding="6,2"
+                                                        Background="{ThemeResource AccentSoftBrush}"
+                                                        CornerRadius="8"
+                                                        VerticalAlignment="Center">
+                                                        <TextBlock
+                                                            FontFamily="{StaticResource MonoFontFamily}"
+                                                            FontSize="{StaticResource FontSizeMicro}"
+                                                            FontWeight="SemiBold"
+                                                            Foreground="{ThemeResource AccentInkBrush}"
+                                                            Text="+N" />
+                                                    </Border>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
                                 <TextBlock
-                                    x:Name="RunModel"
-                                    FontFamily="{StaticResource MonoFontFamily}"
-                                    FontSize="{StaticResource FontSizeMicro}"
-                                    Foreground="{ThemeResource InkSecondaryBrush}"
+                                    x:Name="ChangesEmpty"
+                                    Style="{StaticResource SectionCaptionTextStyle}"
+                                    Text="No changes yet."
                                     TextWrapping="Wrap" />
                             </StackPanel>
 
+                            <!-- Compact Tokens and Speed indicators -->
                             <Grid ColumnSpacing="10">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
@@ -836,14 +731,23 @@
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Grid.Column="0" Spacing="3">
                                     <TextBlock Style="{StaticResource SectionCaptionTextStyle}" Text="TOKENS" />
-                                    <TextBlock
-                                        x:Name="RunTokens"
-                                        FontFamily="{StaticResource MonoFontFamily}"
-                                        FontSize="{StaticResource FontSizeSmall}"
-                                        Foreground="{ThemeResource InkBrush}" />
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <Ellipse
+                                            x:Name="TokenDot"
+                                            Width="6"
+                                            Height="6"
+                                            Fill="{ThemeResource AccentBrush}"
+                                            VerticalAlignment="Center" />
+                                        <TextBlock
+                                            x:Name="RunTokens"
+                                            FontFamily="{StaticResource MonoFontFamily}"
+                                            FontSize="{StaticResource FontSizeSmall}"
+                                            Foreground="{ThemeResource InkBrush}"
+                                            VerticalAlignment="Center" />
+                                    </StackPanel>
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Spacing="3">
-                                    <TextBlock Style="{StaticResource SectionCaptionTextStyle}" Text="RATE" />
+                                    <TextBlock Style="{StaticResource SectionCaptionTextStyle}" Text="SPEED" />
                                     <TextBlock
                                         x:Name="RunRate"
                                         FontFamily="{StaticResource MonoFontFamily}"
@@ -851,106 +755,9 @@
                                         Foreground="{ThemeResource InkBrush}" />
                                 </StackPanel>
                             </Grid>
-
-                            <StackPanel Spacing="3">
-                                <TextBlock Style="{StaticResource SectionCaptionTextStyle}" Text="ELAPSED" />
-                                <TextBlock
-                                    x:Name="RunElapsed"
-                                    FontFamily="{StaticResource MonoFontFamily}"
-                                    FontSize="{StaticResource FontSizeSmall}"
-                                    Foreground="{ThemeResource InkBrush}" />
-                            </StackPanel>
                         </StackPanel>
 
-                        <!--
-                            Real tool executions for the current turn: what was called,
-                            with what, and whether it worked. This is an audit trail, not
-                            a progress animation — every row corresponds to a file that
-                            was read or written, or a command that actually ran.
-                        -->
-                        <StackPanel x:Name="ToolSection" Spacing="6">
-                            <TextBlock Style="{StaticResource SectionCaptionTextStyle}" Text="TOOL EXECUTION" />
-                            <ItemsControl x:Name="ToolList">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="services:ToolRun">
-                                        <Border
-                                            Margin="0,0,0,4"
-                                            Padding="9,7"
-                                            Background="{ThemeResource SunkenBrush}"
-                                            BorderBrush="{ThemeResource HairlineBrush}"
-                                            BorderThickness="1"
-                                            CornerRadius="{StaticResource RadiusSmall}">
-                                            <StackPanel Spacing="3">
-                                                <StackPanel Orientation="Horizontal" Spacing="7">
-                                                    <Ellipse
-                                                        Width="6"
-                                                        Height="6"
-                                                        Fill="{ThemeResource AccentBrush}"
-                                                        VerticalAlignment="Center" />
-                                                    <TextBlock
-                                                        FontFamily="{StaticResource MonoFontFamily}"
-                                                        FontSize="{StaticResource FontSizeMicro}"
-                                                        FontWeight="SemiBold"
-                                                        Foreground="{ThemeResource InkBrush}"
-                                                        Text="{x:Bind Name}"
-                                                        VerticalAlignment="Center" />
-                                                    <TextBlock
-                                                        FontFamily="{StaticResource MonoFontFamily}"
-                                                        FontSize="{StaticResource FontSizeMicro}"
-                                                        Foreground="{ThemeResource InkTertiaryBrush}"
-                                                        Text="ok"
-                                                        VerticalAlignment="Center"
-                                                        Margin="4,0,0,0" />
-                                                </StackPanel>
-                                                <TextBlock
-                                                    Style="{StaticResource SectionCaptionTextStyle}"
-                                                    Text="{x:Bind Arguments}"
-                                                    TextTrimming="CharacterEllipsis"
-                                                    TextWrapping="NoWrap" />
-                                            </StackPanel>
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </StackPanel>
-
-                        <TextBlock
-                            x:Name="RunEmpty"
-                            Style="{StaticResource SectionCaptionTextStyle}"
-                            Text="Nothing has run yet."
-                            TextWrapping="Wrap" />
-
-                        <!-- Credential state. Presence only; no key is ever shown. -->
-                        <Border
-                            x:Name="CredentialNotice"
-                            Padding="10,8"
-                            Background="{ThemeResource AccentSoftBrush}"
-                            BorderBrush="{ThemeResource WarnBrush}"
-                            BorderThickness="0,0,0,1"
-                            CornerRadius="{StaticResource RadiusSmall}"
-                            Visibility="Collapsed">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <Path
-                                    Data="M12 3 A9 9 0 1 0 12 21 A9 9 0 1 0 12 3 Z M11 8 V13 M11 16 V16.1"
-                                    Fill="{ThemeResource WarnBrush}"
-                                    Width="14"
-                                    Height="14"
-                                    HorizontalAlignment="Center"
-                                    VerticalAlignment="Center" />
-                                <TextBlock
-                                    FontFamily="{StaticResource AppFontFamily}"
-                                    FontSize="{StaticResource FontSizeCaption}"
-                                    Foreground="{ThemeResource InkBrush}"
-                                    Text="No credential found for this capability. Set its key and restart."
-                                    TextWrapping="Wrap"
-                                    VerticalAlignment="Center" />
-                            </StackPanel>
-                        </Border>
-                        </StackPanel>
-
-                        <panels:TerminalPanel x:Name="TerminalView" Visibility="Collapsed" />
                         <panels:FilesPanel x:Name="FilesView" Visibility="Collapsed" />
-                        <controls:ActivityTimelineView x:Name="ActivityView" Visibility="Collapsed" />
                     </Grid>
                 </Grid>
             </Border>

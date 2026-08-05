@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using ZX0ai.Core.Agents;
 using ZX0ai.Core.Models;
+using ZX0ai.Core.Routing;
 using ZX0ai.Core.Skills;
 
 namespace ZX0ai.Services;
@@ -82,6 +83,12 @@ public sealed class ToolRunner(
     public int HelperBudget { get; set; }
 
     /// <summary>
+    /// Per-turn delegation budget, threaded into each <see cref="AgentContext"/> so
+    /// <c>delegate_task</c> can spend from it without shared mutable state on the team.
+    /// </summary>
+    public TurnBudget DelegationBudget { get; set; }
+
+    /// <summary>
     /// The tools to advertise for the current workspace.
     /// </summary>
     /// <remarks>
@@ -153,10 +160,17 @@ public sealed class ToolRunner(
 
         try
         {
-            var context = new AgentContext(Leader, workspace.Current);
-            return await skill
+            var context = new AgentContext(Leader, workspace.Current)
+            {
+                DelegationBudget = DelegationBudget,
+            };
+            var result = await skill
                 .ExecuteAsync(call.ParseArguments(), context, cancellationToken)
                 .ConfigureAwait(true);
+
+            // Read back the spent budget so the next call in the same turn sees the update.
+            DelegationBudget = context.DelegationBudget;
+            return result;
         }
         catch (OperationCanceledException)
         {

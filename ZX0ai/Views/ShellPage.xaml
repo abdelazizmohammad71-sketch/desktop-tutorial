@@ -144,115 +144,51 @@
                Background="{ThemeResource RaisedBrush}"
                BorderBrush="{ThemeResource HairlineBrush}"
                BorderThickness="0,0,1,0">
-               <Grid RowSpacing="20">
+               <Grid RowSpacing="16">
                    <Grid.RowDefinitions>
-                       <RowDefinition Height="Auto" />
-                       <RowDefinition Height="Auto" />
                        <RowDefinition Height="Auto" />
                        <RowDefinition Height="Auto" />
                        <RowDefinition Height="*" />
                        <RowDefinition Height="Auto" />
                    </Grid.RowDefinitions>
 
-                   <StackPanel Grid.Row="0" Spacing="6">
+                   <!-- History header with new-chat button -->
+                   <Grid Grid.Row="0" ColumnSpacing="8">
+                       <Grid.ColumnDefinitions>
+                           <ColumnDefinition Width="*" />
+                           <ColumnDefinition Width="Auto" />
+                       </Grid.ColumnDefinitions>
                        <TextBlock
+                           Grid.Column="0"
                            FontFamily="{StaticResource DisplayFontFamily}"
-                           FontSize="{StaticResource FontSizeSubtitle}"
+                           FontSize="{StaticResource FontSizeSmall}"
                            FontWeight="SemiBold"
                            Foreground="{ThemeResource InkBrush}"
-                           Text="ZX0ai" />
-                       <TextBlock
-                           FontFamily="{StaticResource AppFontFamily}"
-                           FontSize="{StaticResource FontSizeCaption}"
-                           Foreground="{ThemeResource InkSecondaryBrush}"
-                           Text="Modern AI workspace"
-                           TextWrapping="Wrap" />
-                   </StackPanel>
-
-                   <StackPanel Grid.Row="1" Spacing="8">
+                           Text="History"
+                           VerticalAlignment="Center" />
                        <Button
-                           AutomationProperties.Name="Chat"
+                           Grid.Column="1"
+                           Width="28"
+                           Height="28"
+                           AutomationProperties.Name="New chat"
                            Click="OnNewChatClick"
-                           Style="{StaticResource NavButtonStyle}">
-                           <StackPanel Orientation="Horizontal" Spacing="10">
-                               <Path
-                                   Data="M12 3 A9 9 0 1 0 12 21 A9 9 0 1 0 12 3 Z M8 12 H16 M8 16 H13"
-                                   Style="{StaticResource IconSmallStyle}" />
-                               <TextBlock
-                                   FontFamily="{StaticResource AppFontFamily}"
-                                   FontSize="{StaticResource FontSizeBody}"
-                                   Foreground="{ThemeResource InkBrush}"
-                                   Text="Chat" />
-                           </StackPanel>
+                           Style="{StaticResource IconButtonStyle}"
+                           ToolTipService.ToolTip="New chat (Ctrl+N)">
+                           <Path
+                               Data="M12 5 V19 M5 12 H19"
+                               Style="{StaticResource IconSmallStyle}" />
                        </Button>
-                       <Button
-                           AutomationProperties.Name="History"
-                           Style="{StaticResource NavButtonStyle}">
-                           <StackPanel Orientation="Horizontal" Spacing="10">
-                               <Path
-                                   Data="M11 4 A8 8 0 1 0 11 20 A8 8 0 1 0 11 4 Z M11 7 V12 L14 14"
-                                   Style="{StaticResource IconSmallStyle}" />
-                               <TextBlock
-                                   FontFamily="{StaticResource AppFontFamily}"
-                                   FontSize="{StaticResource FontSizeBody}"
-                                   Foreground="{ThemeResource InkBrush}"
-                                   Text="History" />
-                           </StackPanel>
-                       </Button>
-                       <Button
-                           AutomationProperties.Name="Models"
-                           Click="OnModelClick"
-                           Style="{StaticResource NavButtonStyle}">
-                           <StackPanel Orientation="Horizontal" Spacing="10">
-                               <Path
-                                   Data="M5 7 H19 M5 12 H19 M5 17 H13"
-                                   Style="{StaticResource IconSmallStyle}" />
-                               <TextBlock
-                                   FontFamily="{StaticResource AppFontFamily}"
-                                   FontSize="{StaticResource FontSizeBody}"
-                                   Foreground="{ThemeResource InkBrush}"
-                                   Text="Models" />
-                           </StackPanel>
-                       </Button>
-                       <Button
-                           AutomationProperties.Name="Files"
-                           Click="OnDockTabClick"
-                           Tag="files"
-                           Style="{StaticResource NavButtonStyle}">
-                           <StackPanel Orientation="Horizontal" Spacing="10">
-                               <Path
-                                   Data="M4 7 H20 V17 H4 Z M4 11 H20"
-                                   Style="{StaticResource IconSmallStyle}" />
-                               <TextBlock
-                                   FontFamily="{StaticResource AppFontFamily}"
-                                   FontSize="{StaticResource FontSizeBody}"
-                                   Foreground="{ThemeResource InkBrush}"
-                                   Text="Files" />
-                           </StackPanel>
-                       </Button>
-                       <Button
-                           AutomationProperties.Name="Settings"
-                           Click="OnHelpClick"
-                           Style="{StaticResource NavButtonStyle}">
-                           <StackPanel Orientation="Horizontal" Spacing="10">
-                               <Path
-                                   Data="M12 5 A7 7 0 1 0 12 19 A7 7 0 1 0 12 5 Z M12 9 V12 M12 15 V15.1"
-                                   Style="{StaticResource IconSmallStyle}" />
-                               <TextBlock
-                                   FontFamily="{StaticResource AppFontFamily}"
-                                   FontSize="{StaticResource FontSizeBody}"
-                                   Foreground="{ThemeResource InkBrush}"
-                                   Text="Settings" />
-                           </StackPanel>
-                       </Button>
-                   </StackPanel>
+                   </Grid>
 
+                   <!-- Search field -->
                    <Border
-                       Grid.Row="2"
-                       Padding="12"
+                       Grid.Row="1"
+                       Padding="10,6"
                        Background="{ThemeResource SunkenBrush}"
-                       CornerRadius="{StaticResource RadiusSmall}">
-                       <Grid ColumnSpacing="10">
+                       BorderBrush="{ThemeResource HairlineBrush}"
+                       BorderThickness="1"
+                       CornerRadius="{StaticResource RadiusSearch}">
+                       <Grid ColumnSpacing="8">
                            <Grid.ColumnDefinitions>
                                <ColumnDefinition Width="Auto" />
                                <ColumnDefinition Width="*" />
@@ -260,25 +196,21 @@
                            <Path
                                Grid.Column="0"
                                Data="M11 4 A7 7 0 1 0 11 18 A7 7 0 1 0 11 4 Z M16.2 16.2 L21 21"
-                               Style="{StaticResource IconSmallStyle}" />
+                               Style="{StaticResource IconSmallStyle}"
+                               Opacity="0.5" />
                            <TextBox
                                x:Name="SearchBox"
                                Grid.Column="1"
                                FontSize="{StaticResource FontSizeCaption}"
-                               PlaceholderText="Search chats"
+                               PlaceholderText="Search chats..."
                                Style="{StaticResource BareTextBoxStyle}"
                                TextChanged="OnSearchChanged"
                                VerticalAlignment="Center" />
                        </Grid>
                    </Border>
 
-                   <TextBlock
-                       Grid.Row="3"
-                       Style="{StaticResource SidebarSectionHeaderStyle}"
-                       Text="Your chats" />
-
                    <ScrollViewer
-                       Grid.Row="4"
+                       Grid.Row="2"
                        HorizontalScrollMode="Disabled"
                        VerticalScrollBarVisibility="Auto"
                        VerticalScrollMode="Auto">
@@ -335,51 +267,70 @@
                        </StackPanel>
                    </ScrollViewer>
 
-                   <!-- Footer: the signed-in name. -->
-                   <Grid
-                       Grid.Row="5"
-                       Height="40"
-                       ColumnSpacing="{StaticResource Space200}">
-                       <Grid.ColumnDefinitions>
-                           <ColumnDefinition Width="Auto" />
-                           <ColumnDefinition Width="*" />
-                           <ColumnDefinition Width="Auto" />
-                       </Grid.ColumnDefinitions>
+                   <!-- Footer: user identity + settings + upgrade -->
+                   <StackPanel Grid.Row="3" Spacing="8">
+                       <Button
+                           x:Name="UpgradeButton"
+                           HorizontalAlignment="Stretch"
+                           Padding="12,10"
+                           Click="OnModelClick"
+                           CornerRadius="{StaticResource RadiusPill}"
+                           Style="{StaticResource UpgradeButtonStyle}">
+                           <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                               <Path
+                                   Data="M12 3 L14.5 9 L21 9.5 L16 14 L17.5 21 L12 17.5 L6.5 21 L8 14 L3 9.5 L9.5 9 Z"
+                                   Style="{StaticResource IconSmallStyle}" />
+                               <TextBlock
+                                   FontFamily="{StaticResource AppFontFamily}"
+                                   FontSize="{StaticResource FontSizeCaption}"
+                                   FontWeight="SemiBold"
+                                   Text="Upgrade to Pro"
+                                   VerticalAlignment="Center" />
+                           </StackPanel>
+                       </Button>
 
-                       <Grid Grid.Column="0" Width="32" Height="32">
-                           <Ellipse Fill="{ThemeResource AccentBrush}" />
+                       <Grid Height="40" ColumnSpacing="{StaticResource Space200}">
+                           <Grid.ColumnDefinitions>
+                               <ColumnDefinition Width="Auto" />
+                               <ColumnDefinition Width="*" />
+                               <ColumnDefinition Width="Auto" />
+                           </Grid.ColumnDefinitions>
+
+                           <Grid Grid.Column="0" Width="32" Height="32">
+                               <Ellipse Fill="{ThemeResource AccentBrush}" />
+                               <TextBlock
+                                   x:Name="UserInitial"
+                                   FontFamily="{StaticResource AppFontFamily}"
+                                   FontSize="{StaticResource FontSizeCaption}"
+                                   FontWeight="SemiBold"
+                                   Foreground="{ThemeResource InkOnAccentBrush}"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center" />
+                           </Grid>
+
                            <TextBlock
-                               x:Name="UserInitial"
+                               x:Name="UserName"
+                               Grid.Column="1"
                                FontFamily="{StaticResource AppFontFamily}"
                                FontSize="{StaticResource FontSizeCaption}"
-                               FontWeight="SemiBold"
-                               Foreground="{ThemeResource InkOnAccentBrush}"
-                               HorizontalAlignment="Center"
+                               Foreground="{ThemeResource InkBrush}"
+                               TextTrimming="CharacterEllipsis"
                                VerticalAlignment="Center" />
+
+                           <Button
+                               Grid.Column="2"
+                               Width="32"
+                               Height="32"
+                               AutomationProperties.Name="About ZX0ai"
+                               Click="OnHelpClick"
+                               Style="{StaticResource IconButtonStyle}"
+                               ToolTipService.ToolTip="About">
+                               <Path
+                                   Data="M12 3 A9 9 0 1 0 12 21 A9 9 0 1 0 12 3 Z M10.2 9.3 A1.8 1.8 0 1 1 12.7 11.4 C12 12 11.7 12.4 11.7 13.2 M11.7 15.8 V15.9"
+                                   Style="{StaticResource IconSmallStyle}" />
+                           </Button>
                        </Grid>
-
-                       <TextBlock
-                           x:Name="UserName"
-                           Grid.Column="1"
-                           FontFamily="{StaticResource AppFontFamily}"
-                           FontSize="{StaticResource FontSizeCaption}"
-                           Foreground="{ThemeResource InkBrush}"
-                           TextTrimming="CharacterEllipsis"
-                           VerticalAlignment="Center" />
-
-                       <Button
-                           Grid.Column="2"
-                           Width="32"
-                           Height="32"
-                           AutomationProperties.Name="About ZX0ai"
-                           Click="OnHelpClick"
-                           Style="{StaticResource IconButtonStyle}"
-                           ToolTipService.ToolTip="About">
-                           <Path
-                               Data="M12 3 A9 9 0 1 0 12 21 A9 9 0 1 0 12 3 Z M10.2 9.3 A1.8 1.8 0 1 1 12.7 11.4 C12 12 11.7 12.4 11.7 13.2 M11.7 15.8 V15.9"
-                               Style="{StaticResource IconSmallStyle}" />
-                       </Button>
-                   </Grid>
+                   </StackPanel>
                </Grid>
             </Border>
 
@@ -631,15 +582,7 @@
                                                     Data="M12 5 V19 M5 12 H19"
                                                     Style="{StaticResource IconStyle}" />
                                             </Button>
-                                            <Button
-                                                x:Name="DictateButton"
-                                                AutomationProperties.Name="Dictate"
-                                                Style="{StaticResource IconButtonStyle}"
-                                                ToolTipService.ToolTip="Dictation is not wired yet">
-                                                <Path
-                                                    Data="M12 4 A3 3 0 0 0 9 7 V12 A3 3 0 0 0 15 12 V7 A3 3 0 0 0 12 4 Z M5.5 11 V12 A6.5 6.5 0 0 0 18.5 12 V11 M12 18.5 V21"
-                                                    Style="{StaticResource IconStyle}" />
-                                            </Button>
+
                                         </StackPanel>
 
                                         <StackPanel
@@ -733,7 +676,7 @@
                 Background="{ThemeResource PanelBrush}"
                 BorderBrush="{ThemeResource HairlineBrush}"
                 BorderThickness="1,0,0,0">
-                <Grid RowSpacing="12">
+                <Grid RowSpacing="12" Padding="14,12">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
@@ -934,6 +877,8 @@
                                             Margin="0,0,0,4"
                                             Padding="9,7"
                                             Background="{ThemeResource SunkenBrush}"
+                                            BorderBrush="{ThemeResource HairlineBrush}"
+                                            BorderThickness="1"
                                             CornerRadius="{StaticResource RadiusSmall}">
                                             <StackPanel Spacing="3">
                                                 <StackPanel Orientation="Horizontal" Spacing="7">
@@ -945,9 +890,17 @@
                                                     <TextBlock
                                                         FontFamily="{StaticResource MonoFontFamily}"
                                                         FontSize="{StaticResource FontSizeMicro}"
+                                                        FontWeight="SemiBold"
                                                         Foreground="{ThemeResource InkBrush}"
                                                         Text="{x:Bind Name}"
                                                         VerticalAlignment="Center" />
+                                                    <TextBlock
+                                                        FontFamily="{StaticResource MonoFontFamily}"
+                                                        FontSize="{StaticResource FontSizeMicro}"
+                                                        Foreground="{ThemeResource InkTertiaryBrush}"
+                                                        Text="ok"
+                                                        VerticalAlignment="Center"
+                                                        Margin="4,0,0,0" />
                                                 </StackPanel>
                                                 <TextBlock
                                                     Style="{StaticResource SectionCaptionTextStyle}"
@@ -971,13 +924,27 @@
                         <Border
                             x:Name="CredentialNotice"
                             Padding="10,8"
-                            Background="{ThemeResource SunkenBrush}"
+                            Background="{ThemeResource AccentSoftBrush}"
+                            BorderBrush="{ThemeResource WarnBrush}"
+                            BorderThickness="0,0,0,1"
                             CornerRadius="{StaticResource RadiusSmall}"
                             Visibility="Collapsed">
-                            <TextBlock
-                                Style="{StaticResource SectionCaptionTextStyle}"
-                                Text="No credential found for this capability. Set its key and restart."
-                                TextWrapping="Wrap" />
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Path
+                                    Data="M12 3 A9 9 0 1 0 12 21 A9 9 0 1 0 12 3 Z M11 8 V13 M11 16 V16.1"
+                                    Fill="{ThemeResource WarnBrush}"
+                                    Width="14"
+                                    Height="14"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center" />
+                                <TextBlock
+                                    FontFamily="{StaticResource AppFontFamily}"
+                                    FontSize="{StaticResource FontSizeCaption}"
+                                    Foreground="{ThemeResource InkBrush}"
+                                    Text="No credential found for this capability. Set its key and restart."
+                                    TextWrapping="Wrap"
+                                    VerticalAlignment="Center" />
+                            </StackPanel>
                         </Border>
                         </StackPanel>
 

@@ -60,7 +60,8 @@ public sealed record ModelInvocation(
     string RequestedSlug,
     string ResolvedSlug,
     string EffortProfile = "provider-default",
-    string Speed = "Standard")
+    string Speed = "Standard",
+    int? MaxTokens = null)
 {
     public static ModelInvocation Direct(string slug) => new(slug, slug);
 }

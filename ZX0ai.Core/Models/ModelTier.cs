@@ -26,6 +26,16 @@ public sealed class ModelTier
 
     public string Speed { get; init; } = "Standard";
 
+    /// <summary>
+    /// Which provider answers this tier: <c>openrouter</c> or <c>qwen</c>.
+    /// </summary>
+    /// <remarks>
+    /// Each tier owns its provider so a single-tier capability can route directly to its
+    /// own backend (e.g. zax-v2 → Qwen) without depending on the global switch. Falls back
+    /// to the global provider when unset for backwards compatibility.
+    /// </remarks>
+    public string Provider { get; init; } = string.Empty;
+
     /// <summary>Model slug used when <see cref="Mode"/> is <see cref="TeamMode.Single"/>.</summary>
     public string Model { get; set; } = string.Empty;
 

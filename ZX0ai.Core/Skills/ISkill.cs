@@ -1,5 +1,6 @@
 using System.Text.Json;
 using ZX0ai.Core.Agents;
+using ZX0ai.Core.Routing;
 using ZX0ai.Core.Workspaces;
 
 namespace ZX0ai.Core.Skills;
@@ -10,6 +11,12 @@ namespace ZX0ai.Core.Skills;
 public sealed record AgentContext(Agent Agent, WorkspaceContext Workspace)
 {
     public string WorkingDirectory => Workspace.WorkingDirectory ?? string.Empty;
+
+    /// <summary>
+    /// Per-turn delegation budget, threaded through the context so each conversation
+    /// owns its own scope. Mutable because <c>delegate_task</c> spends from it.
+    /// </summary>
+    public TurnBudget DelegationBudget { get; set; }
 }
 
 /// <summary>

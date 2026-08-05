@@ -1,4 +1,5 @@
 using System.Text;
+using System.Threading;
 using Microsoft.Extensions.Logging;
 using ZX0ai.Core.Models;
 using ZX0ai.Core.Routing;
@@ -43,6 +44,11 @@ public static class SpecialistRoles
 /// half-built in two incompatible directions, and it also means every write stays
 /// attributable to the one agent the user is talking to.
 /// </para>
+/// <para>
+/// The team is stateless: the per-turn budget is passed in by the caller, so each
+/// conversation owns its own turn scope. The team can safely be a singleton — it holds
+/// no mutable per-turn state.
+/// </para>
 /// </remarks>
 public sealed class AgentTeam(
     IChatProvider provider,
@@ -52,46 +58,41 @@ public sealed class AgentTeam(
     /// <summary>A specialist's reply is read by a model, so it can be long. Not unbounded.</summary>
     private const int MaxReplyCharacters = 24000;
 
-    private int _spent;
-    private int _budget;
-
-    /// <summary>Specialist calls still permitted this turn.</summary>
-    public int Remaining => Math.Max(0, _budget - _spent);
-
     /// <summary>Opens a turn with a fresh budget. Called once per user message.</summary>
-    public void BeginTurn(TaskSize size)
+    public TurnBudget BeginTurn(TaskSize size)
     {
-        _budget = TaskClassifier.HelperBudget(size);
-        _spent = 0;
-
+        var limit = TaskClassifier.HelperBudget(size);
         logger.LogInformation(
             "Turn classified {Size}; {Budget} specialist call(s) permitted.",
             size,
-            _budget);
+            limit);
+        return new TurnBudget(Spent: 0, Limit: limit);
     }
 
     /// <summary>Runs a specialist. Returns its text, or an explanation of why it did not run.</summary>
-    public async Task<string> RunAsync(
+    public async Task<(string Result, TurnBudget Budget)> RunAsync(
         string role,
         string task,
         string? context,
+        TurnBudget budget,
         CancellationToken cancellationToken)
     {
-        if (Remaining == 0)
+        if (budget.Remaining == 0)
         {
-            return _budget == 0
+            return (budget.Limit == 0
                 ? "Delegation is not available for a request this size. Do it yourself."
-                : "The specialist budget for this turn is spent. Finish the work yourself.";
+                : "The specialist budget for this turn is spent. Finish the work yourself.",
+                budget);
         }
 
         var tier = config.ActiveTier;
         var member = SelectMember(tier, role);
         if (member is null || string.IsNullOrWhiteSpace(member.EffectiveModel))
         {
-            return $"No specialist is configured for '{role}'. Do this part yourself.";
+            return ($"No specialist is configured for '{role}'. Do this part yourself.", budget);
         }
 
-        _spent++;
+        var nextBudget = budget.Spend();
 
         var messages = new List<ChatMessage>
         {
@@ -136,15 +137,13 @@ public sealed class AgentTeam(
         }
         catch (Exception ex) when (ex is ChatProviderException or HttpRequestException or IOException)
         {
-            // A specialist failing is a setback, not the end of the turn. The
-            // orchestrator is told plainly and can do the work itself.
             logger.LogWarning(ex, "Specialist {Role} failed.", role);
-            return $"The '{role}' specialist could not complete: {ex.Message}. Do this part yourself.";
+            return ($"The '{role}' specialist could not complete: {ex.Message}. Do this part yourself.", nextBudget);
         }
 
-        return reply.Length == 0
+        return (reply.Length == 0
             ? $"The '{role}' specialist returned nothing. Do this part yourself."
-            : reply.ToString();
+            : reply.ToString(), nextBudget);
     }
 
     /// <summary>

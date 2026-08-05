@@ -95,18 +95,6 @@ public sealed partial class ConversationViewModel : ObservableObject
     [ObservableProperty]
     private string? _errorMessage;
 
-    /// <summary>
-    /// Set when the turn actually ran on a different tier than the one selected.
-    /// </summary>
-    /// <remarks>
-    /// The one honest way to do an automatic fallback: the answer is real, but it did
-    /// not come from what the model chip says, and saying so out loud is what "never
-    /// silently claim one model while another handled the request" actually means in
-    /// practice.
-    /// </remarks>
-    [ObservableProperty]
-    private string? _fallbackNotice;
-
     [ObservableProperty]
     private double _tokensPerSecond;
 
@@ -388,7 +376,9 @@ public sealed partial class ConversationViewModel : ObservableObject
 
         if (!_provider.IsConfigured)
         {
-            ErrorMessage = "No API key. Set OPENROUTER_API_KEY and restart.";
+            ErrorMessage = tier.Provider.Equals("qwen", StringComparison.OrdinalIgnoreCase)
+                ? "No API key. Set ZAX_KEY_V2 and restart."
+                : "No API key. Set OPENROUTER_API_KEY and restart.";
             RunState = RunState.Failed;
             return;
         }
@@ -403,7 +393,6 @@ public sealed partial class ConversationViewModel : ObservableObject
         }
 
         ErrorMessage = null;
-        FallbackNotice = null;
 
         Messages.Add(new ChatMessage { Role = ChatRole.User, Content = prompt.Trim() });
         OnPropertyChanged(nameof(HasMessages));
@@ -440,7 +429,7 @@ public sealed partial class ConversationViewModel : ObservableObject
             // adapter rather than looking like the model that was asked for.
             var invocation = new ModelInvocation(requested, model, effort, Speed);
 
-            await RunAgenticTurnAsync(invocation, reply, _turn.Token).ConfigureAwait(true);
+            await RunAgenticTurnAsync(invocation, reply, tier, _turn.Token).ConfigureAwait(true);
         }
         catch (OperationCanceledException)
         {
@@ -449,17 +438,10 @@ public sealed partial class ConversationViewModel : ObservableObject
         }
         catch (ChatProviderException ex)
         {
-            if (await TryFallbackAsync(ex, tier, reply, _turn.Token).ConfigureAwait(true))
-            {
-                RunState = RunState.Done;
-            }
-            else
-            {
-                _logger.LogError(ex, "Turn failed: {Reason}.", ex.Reason);
-                ErrorMessage = Describe(ex);
-                RunState = RunState.Failed;
-                DropEmptyReply(reply);
-            }
+            _logger.LogError(ex, "Turn failed: {Reason}.", ex.Reason);
+            ErrorMessage = Describe(ex);
+            RunState = RunState.Failed;
+            DropEmptyReply(reply);
         }
         catch (Exception ex) when (ex is HttpRequestException or IOException or TaskCanceledException)
         {
@@ -489,80 +471,6 @@ public sealed partial class ConversationViewModel : ObservableObject
         }
     }
 
-    /// <summary>The one tier a costly turn falls back to: free, and always configured.</summary>
-    private const string FallbackTierKey = "zax-low-free";
-
-    /// <summary>
-    /// Retries the same turn on the fallback tier after a failure the fallback could
-    /// plausibly fix, then says so.
-    /// </summary>
-    /// <remarks>
-    /// Deliberately narrow about which failures qualify. A bad request or an invalid
-    /// key fails identically on every tier, so retrying it elsewhere would just spend a
-    /// second turn confirming the same problem — this exists only for the failures that
-    /// are properties of the <em>one provider call</em> rather than of the request:
-    /// rate limiting, a server-side outage, and a credit shortfall the automatic
-    /// token-reduction retry could not resolve on its own.
-    /// </remarks>
-    private async Task<bool> TryFallbackAsync(
-        ChatProviderException original,
-        ModelTier failedTier,
-        ChatMessage reply,
-        CancellationToken cancellationToken)
-    {
-        if (original.Reason is not (ChatFailureReason.RateLimited or
-                                     ChatFailureReason.ServerError or
-                                     ChatFailureReason.InsufficientCredits))
-        {
-            return false;
-        }
-
-        if (string.Equals(failedTier.Key, FallbackTierKey, StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
-
-        if (_config.FindTier(FallbackTierKey) is not { IsRunnable: true } fallbackTier)
-        {
-            return false;
-        }
-
-        var (fallbackModel, fallbackRequested, fallbackEffort) = Resolve(fallbackTier);
-        if (string.IsNullOrWhiteSpace(fallbackModel))
-        {
-            return false;
-        }
-
-        _logger.LogWarning(
-            "Falling back from {Original} to {Fallback} after {Reason}.",
-            failedTier.Key,
-            fallbackTier.Key,
-            original.Reason);
-
-        // A partial answer from the failed attempt must not bleed into the fallback's —
-        // the two never came from the same model, so nothing about the first one is
-        // still true once the second is what actually answers. The message's own Model
-        // field stays as originally recorded (it is init-only, by design — nothing else
-        // mutates it mid-turn either); FallbackNotice is the disclosure that matters,
-        // since it is what actually reaches the screen.
-        reply.Content = string.Empty;
-
-        var invocation = new ModelInvocation(fallbackRequested, fallbackModel, fallbackEffort, Speed);
-
-        try
-        {
-            await RunAgenticTurnAsync(invocation, reply, cancellationToken).ConfigureAwait(true);
-        }
-        catch (Exception ex) when (ex is ChatProviderException or HttpRequestException or IOException)
-        {
-            _logger.LogWarning(ex, "Fallback to {Fallback} also failed.", fallbackTier.Key);
-            return false;
-        }
-
-        FallbackNotice = $"{failedTier.DisplayName} was unavailable — answered using {fallbackTier.DisplayName} instead.";
-        return true;
-    }
-
     /// <summary>
     /// Streams, runs whatever tools the model asks for, feeds the results back, and
     /// repeats until it stops asking.
@@ -584,18 +492,27 @@ public sealed partial class ConversationViewModel : ObservableObject
     private async Task RunAgenticTurnAsync(
         ModelInvocation invocation,
         ChatMessage reply,
+        ModelTier tier,
         CancellationToken cancellationToken)
     {
         ToolRuns.Clear();
 
-        // Sized once, from the request that opened the turn. The orchestrator decides
-        // whether to delegate at all; this only caps how far it can go, so a request
-        // read as smaller than it was costs a missed specialist rather than a runaway.
-        var request = Messages.LastOrDefault(message => message.Role == ChatRole.User)?.Content ?? string.Empty;
-        var size = TaskClassifier.Classify(request, _workspace.IsBound);
-        var budget = TaskClassifier.HelperBudget(size);
-
-        _team.BeginTurn(size);
+        // Single-tier capabilities (zax-v2 and any future standalone model) never
+        // delegate. They own one model and one execution path, so the helper budget is
+        // forced to zero and the delegate tool is never advertised, regardless of how
+        // large the request reads. Only team tiers are allowed the specialist path.
+        var budget = 0;
+        if (tier is { IsTeam: true })
+        {
+            var request = Messages.LastOrDefault(message => message.Role == ChatRole.User)?.Content ?? string.Empty;
+            var size = TaskClassifier.Classify(request, _workspace.IsBound);
+            budget = TaskClassifier.HelperBudget(size);
+            _tools.DelegationBudget = _team.BeginTurn(size);
+        }
+        else
+        {
+            _tools.DelegationBudget = default;
+        }
         _tools.HelperBudget = budget;
 
         var tools = _tools.Tools;
@@ -717,7 +634,7 @@ public sealed partial class ConversationViewModel : ObservableObject
     /// </remarks>
     private static string Describe(ChatProviderException ex) => ex.Reason switch
     {
-        ChatFailureReason.NotConfigured => "No API key. Set OPENROUTER_API_KEY and restart.",
+        ChatFailureReason.NotConfigured => "No API key. Set the credential for this capability and restart.",
         ChatFailureReason.Unauthorized => "The provider rejected the credential.",
         ChatFailureReason.RateLimited => "Rate limited. Wait a moment and try again.",
         ChatFailureReason.Network => "Could not reach the provider.",

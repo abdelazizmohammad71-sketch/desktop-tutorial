@@ -120,7 +120,12 @@ public sealed class ConfigService : IConfigService
             return scoped;
         }
 
-        var providerFallback = (_options.Provider?.Trim().ToLowerInvariant()) switch
+        // The fallback key follows the tier's own provider, not the global one, so a
+        // qwen-backed tier finds its key even when the global provider is openrouter.
+        var tierProvider = !string.IsNullOrWhiteSpace(tier?.Provider)
+            ? tier!.Provider
+            : _options.Provider?.Trim().ToLowerInvariant();
+        var providerFallback = tierProvider switch
         {
             "qwen" => _options.Qwen.ApiKeyEnvironmentVariable,
             _ => ApiKeyVariable,
@@ -382,33 +387,6 @@ public sealed class ConfigService : IConfigService
                 };
             }
 
-            // Enforce per-tier, same-model routing for team tiers.
-            if (mode == TeamMode.Team)
-            {
-                var canonicalSlug = configuredLeader?.RequestedSlug?.Trim();
-                if (string.IsNullOrWhiteSpace(canonicalSlug))
-                {
-                    canonicalSlug = !string.IsNullOrWhiteSpace(tier.Leader)
-                        ? tier.Leader
-                        : tier.Model;
-                }
-
-                if (!string.IsNullOrWhiteSpace(canonicalSlug))
-                {
-                    var canonicalFallbacks = configuredLeader?.FallbackSlugs ?? [];
-                    foreach (var member in projectedMembers)
-                    {
-                        if (configuredLeader is not null && ReferenceEquals(member, configuredLeader))
-                        {
-                            continue;
-                        }
-
-                        member.RequestedSlug = canonicalSlug;
-                        member.FallbackSlugs = canonicalFallbacks;
-                    }
-                }
-            }
-
             result.Add(new ModelTier
             {
                 Key = key,
@@ -419,6 +397,7 @@ public sealed class ConfigService : IConfigService
                 RelativeSpeed = Math.Clamp(tier.RelativeSpeed, 1, 4),
                 RelativeCost = Math.Clamp(tier.RelativeCost, 1, 4),
                 Speed = string.IsNullOrWhiteSpace(tier.Speed) ? "Standard" : tier.Speed,
+                Provider = ResolveTierProvider(tier.Provider, options.Provider),
                 Model = tier.Model ?? string.Empty,
                 Leader = configuredLeader?.EffectiveModel ?? tier.Leader,
                 LeaderMember = configuredLeader,
@@ -476,6 +455,16 @@ public sealed class ConfigService : IConfigService
         "ui-ux-designer" => "UI/UX Designer",
         _ => roleId.Replace('-', ' '),
     };
+
+    /// <summary>
+    /// Resolves the provider for a tier, falling back to the global provider when the
+    /// tier does not declare its own.
+    /// </summary>
+    private static string ResolveTierProvider(string? tierProvider, string? globalProvider)
+    {
+        var raw = !string.IsNullOrWhiteSpace(tierProvider) ? tierProvider!.Trim() : globalProvider;
+        return string.IsNullOrWhiteSpace(raw) ? "openrouter" : raw.ToLowerInvariant();
+    }
 
     private static TeamMode ParseMode(string? value) =>
         string.Equals(value, "team", StringComparison.OrdinalIgnoreCase) ? TeamMode.Team : TeamMode.Single;

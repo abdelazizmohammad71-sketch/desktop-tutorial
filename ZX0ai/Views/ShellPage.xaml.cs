@@ -670,7 +670,7 @@ public sealed partial class ShellPage : Page
             "terminal" => "Terminal",
             "files" => "Files",
             "activity" => "Activity",
-            _ => "Run",
+            _ => "Tool Execution",
         };
 
         // When opening activity, start a demo stream once for visibility
@@ -1006,7 +1006,6 @@ public sealed partial class ShellPage : Page
                 break;
 
             case nameof(ConversationViewModel.ErrorMessage):
-            case nameof(ConversationViewModel.FallbackNotice):
                 ApplyError();
                 break;
 
@@ -1136,17 +1135,11 @@ public sealed partial class ShellPage : Page
     }
 
     /// <summary>
-    /// The one banner above the composer, showing a failure or — just as loudly — the
-    /// fact that a fallback answered instead of the selected model.
+    /// The one banner above the composer, showing a failure in plain language.
     /// </summary>
-    /// <remarks>
-    /// An error always wins when both are set: a turn cannot have simultaneously failed
-    /// and been rescued by a fallback, so this is really "whichever of the two actually
-    /// happened," not a priority order between competing messages.
-    /// </remarks>
     private void ApplyError()
     {
-        var message = _vm.ErrorMessage ?? _vm.FallbackNotice;
+        var message = _vm.ErrorMessage;
         var has = !string.IsNullOrWhiteSpace(message);
 
         ErrorText.Text = message ?? string.Empty;

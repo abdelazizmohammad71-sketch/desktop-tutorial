@@ -59,35 +59,67 @@ public sealed class QwenProvider(
             throw new ChatProviderException(ChatFailureReason.NotConfigured, "Error_NoApiKey");
         }
 
-        var payload = BuildPayload(invocation, messages, tools);
-        using var request = new HttpRequestMessage(HttpMethod.Post, QwenEndpointPolicy.Build(config.Options.Qwen, "chat/completions"))
+        HttpResponseMessage? response = null;
+        for (var attempt = 0; attempt < 2; attempt++)
         {
-            Content = new StringContent(JsonSerializer.Serialize(payload, JsonOptions), Encoding.UTF8, "application/json"),
-        };
+            var payload = BuildPayload(invocation, messages, tools);
+            using var request = new HttpRequestMessage(HttpMethod.Post, QwenEndpointPolicy.Build(config.Options.Qwen, "chat/completions"))
+            {
+                Content = new StringContent(JsonSerializer.Serialize(payload, JsonOptions), Encoding.UTF8, "application/json"),
+            };
 
-        request.Headers.TryAddWithoutValidation("Authorization", $"Bearer {credential}");
+            request.Headers.TryAddWithoutValidation("Authorization", $"Bearer {credential}");
 
-        HttpResponseMessage response;
-        try
-        {
-            response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-        }
-        catch (HttpRequestException ex)
-        {
-            logger.LogError(ex, "Qwen request failed at the transport layer.");
-            throw new ChatProviderException(ChatFailureReason.Network, "Error_Network", ex.Message, ex);
-        }
-        catch (TaskCanceledException ex) when (!cancellationToken.IsCancellationRequested)
-        {
-            throw new ChatProviderException(ChatFailureReason.Network, "Error_Network", ex.Message, ex);
-        }
+            try
+            {
+                response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+            }
+            catch (HttpRequestException ex)
+            {
+                if (attempt == 0)
+                {
+                    logger.LogWarning(ex, "Qwen transport error on attempt 1; retrying once.");
+                    await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken).ConfigureAwait(false);
+                    continue;
+                }
+                logger.LogError(ex, "Qwen request failed at the transport layer.");
+                throw new ChatProviderException(ChatFailureReason.Network, "Error_Network", ex.Message, ex);
+            }
+            catch (TaskCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+            {
+                throw new ChatProviderException(ChatFailureReason.Network, "Error_Network", ex.Message, ex);
+            }
 
-        if (!response.IsSuccessStatusCode)
-        {
+            if (response.IsSuccessStatusCode)
+            {
+                break;
+            }
+
+            var status = (int)response.StatusCode;
+            var isTransient = status == 429 || status >= 500;
+
             var body = await ReadErrorBodyAsync(response, cancellationToken).ConfigureAwait(false);
+            var retryAfter = response.Headers.RetryAfter?.Delta;
             response.Dispose();
-            logger.LogError("Qwen returned {Status} for model {Model}: {Body}", (int)response.StatusCode, invocation.ResolvedSlug, body);
-            throw ChatProviderException.FromStatus((int)response.StatusCode, body);
+            response = null;
+
+            logger.LogError("Qwen returned {Status} for model {Model}: {Body}", status, invocation.ResolvedSlug, body);
+
+            if (!isTransient || attempt > 0)
+            {
+                throw ChatProviderException.FromStatus(status, body);
+            }
+
+            // Honour Retry-After when present; otherwise wait a fixed second.
+            var delay = retryAfter ?? TimeSpan.FromSeconds(1);
+            logger.LogInformation("Qwen transient {Status}; retrying after {Delay}.", status, delay);
+            await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+        }
+
+        if (response is null || !response.IsSuccessStatusCode)
+        {
+            response?.Dispose();
+            throw new ChatProviderException(ChatFailureReason.Unknown, "Error_ModelFailed");
         }
 
         using (response)
@@ -135,13 +167,17 @@ public sealed class QwenProvider(
         IReadOnlyList<ChatMessage> messages,
         IReadOnlyList<ToolDefinition>? tools)
     {
+        // Honour the caller's max-token hint when present; otherwise let the provider
+        // use its own default rather than forcing an artificially low ceiling.
+        var maxTokens = invocation.MaxTokens;
+
         return new
         {
             model = invocation.ResolvedSlug,
             stream = true,
             temperature = 0.7m,
             top_p = 0.95m,
-            max_tokens = 2048,
+            max_tokens = maxTokens,
             messages = messages.Select(ToWireMessage).ToArray(),
             tools = tools?.Count > 0 ? tools.Select(t => t.ToWire()).ToArray() : null,
             tool_choice = tools is { Count: > 0 } ? "auto" : null,

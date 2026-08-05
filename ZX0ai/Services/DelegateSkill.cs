@@ -1,4 +1,5 @@
 using System.Text.Json;
+using ZX0ai.Core.Routing;
 using ZX0ai.Core.Skills;
 
 namespace ZX0ai.Services;
@@ -19,6 +20,11 @@ namespace ZX0ai.Services;
 /// It also means the orchestrator decides, turn by turn, with the request in front of
 /// it — which is what the routing is supposed to do. <see cref="TaskClassifier"/> only
 /// sets the ceiling, so a misread request wastes one call instead of six.
+/// </para>
+/// <para>
+/// The per-turn budget is threaded through the <see cref="AgentContext"/> so each
+/// conversation owns its own delegation scope. No shared mutable state lives on the
+/// team itself.
 /// </para>
 /// </remarks>
 public sealed class DelegateSkill(AgentTeam team) : ISkill
@@ -42,8 +48,6 @@ public sealed class DelegateSkill(AgentTeam team) : ISkill
         AgentContext context,
         CancellationToken cancellationToken = default)
     {
-        _ = context;
-
         var role = arguments.GetString("role")?.Trim().ToLowerInvariant();
         var task = arguments.GetString("task");
 
@@ -58,9 +62,12 @@ public sealed class DelegateSkill(AgentTeam team) : ISkill
             return SkillResult.Fail("Provide the task for the specialist.");
         }
 
-        var result = await team
-            .RunAsync(role, task, arguments.GetString("context"), cancellationToken)
+        var budget = context.DelegationBudget;
+        var (result, nextBudget) = await team
+            .RunAsync(role, task, arguments.GetString("context"), budget, cancellationToken)
             .ConfigureAwait(true);
+
+        context.DelegationBudget = nextBudget;
 
         return SkillResult.Ok(result, $"Consulted {role}");
     }

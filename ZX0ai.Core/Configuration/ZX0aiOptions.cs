@@ -121,6 +121,13 @@ public sealed class TierOptions
     [JsonPropertyName("speed")]
     public string Speed { get; set; } = "Standard";
 
+    /// <summary>
+    /// Which provider answers this tier: <c>openrouter</c> or <c>qwen</c>.
+    /// Falls back to the global <c>provider</c> when unset.
+    /// </summary>
+    [JsonPropertyName("provider")]
+    public string? Provider { get; set; }
+
     [JsonPropertyName("model")]
     public string? Model { get; set; }
 

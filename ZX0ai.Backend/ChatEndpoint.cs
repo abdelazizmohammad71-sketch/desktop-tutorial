@@ -55,12 +55,13 @@ internal static class ChatEndpoint
 
         if (!provider.IsConfigured)
         {
+            var keyHint = tier.Provider.Equals("qwen", StringComparison.OrdinalIgnoreCase)
+                ? "Set ZAX_KEY_V2 in the backend process environment."
+                : "Set OPENROUTER_API_KEY in the backend process environment.";
             await WriteJsonErrorAsync(
                 context.Response,
                 StatusCodes.Status503ServiceUnavailable,
-                new ApiError(
-                    "provider_not_configured",
-                    "Set OPENROUTER_API_KEY in the backend process environment."),
+                new ApiError("provider_not_configured", keyHint),
                 cancellationToken);
             return;
         }

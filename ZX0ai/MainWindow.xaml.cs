@@ -1,6 +1,8 @@
 using Microsoft.UI;
+using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
+using Windows.Graphics;
 using Windows.UI;
 using ZX0ai.Views;
 
@@ -11,14 +13,18 @@ namespace ZX0ai;
 /// </summary>
 public sealed partial class MainWindow : Window
 {
+    private MicaController? _mica;
+
     public MainWindow()
     {
         InitializeComponent();
 
         Title = "ZX0ai";
         AppWindow.SetIcon("Assets/zx0ai.ico");
-        AppWindow.Resize(new Windows.Graphics.SizeInt32(1440, 940));
+        AppWindow.Resize(new SizeInt32(1440, 940));
         CenterOnScreen();
+
+        ApplyMicaBackdrop();
 
         // Both need the window: the picker needs its handle, the approval dialog needs
         // a XamlRoot. Neither can be resolved before the shell is in the tree.
@@ -28,6 +34,30 @@ public sealed partial class MainWindow : Window
         shell.Loaded += (_, _) => App.GetService<Services.ApprovalDialogService>().Attach(shell);
 
         MountShell(shell);
+    }
+
+    /// <summary>
+    /// Enables the Mica backdrop so the window picks up the desktop wallpaper tinted by
+    /// the active theme — the signature Windows 11 material.
+    /// </summary>
+    private void ApplyMicaBackdrop()
+    {
+        if (!MicaController.IsSupported())
+        {
+            return;
+        }
+
+        _mica = new MicaController
+        {
+            Kind = MicaKind.BaseAlt,
+        };
+
+        _mica.AddSystemBackdropTarget(this);
+        _mica.SetSystemBackdropConfiguration(new SystemBackdropConfiguration
+        {
+            IsInputActive = true,
+            Theme = SystemBackdropTheme.Default,
+        });
     }
 
     /// <summary>
